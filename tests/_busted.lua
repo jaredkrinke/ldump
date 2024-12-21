@@ -15,11 +15,10 @@ assert.is_true = function(it) end
 assert.is_nil = function(it) end
 
 --- @generic T
---- @param a T
---- @param b T
-assert.are_equal = function(a, b) end
+--- @param expected T
+--- @param received T
+assert.are_equal = function(expected, received) end
 
---- @generic T: table
---- @param a T
---- @param b T
-assert.are_same = function(a, b) end
+--- @param expected T
+--- @param received T
+assert.are_same = function(expected, received) end
