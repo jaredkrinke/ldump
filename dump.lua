@@ -1,3 +1,5 @@
+-- internal implementation --
+
 local to_expression = function(statement)
   return ("(function()\n%s\nend)()"):format(statement)
 end
@@ -120,36 +122,53 @@ handle_primitive = function(x, cache)
   return primitives[xtype](x, cache)
 end
 
-return setmetatable({
-  get_warnings = function() return {unpack(warnings)} end,
-  ignore_upvalue_size = setmetatable({}, {
-    __concat = function(self, other)
-      return self(other)
-    end,
-    __call = function(self, other)
-      allowed_big_upvalues[other] = true
-      return other
-    end,
-  }),
-  require_path = nil,
-  serializers = {},
-}, {
-  __call = function(self, x)
-    assert(
-      self.require_path,
-      "Put the lua path to dump libary into dump.require_path before calling dump itself"
-    )
 
-    stack = {}
-    warnings = {}
-    local cache = {size = 0}
-    local result
-    if type(x) == "table" then
-      result = build_table(x, cache)
-    else
-      result = "return " .. handle_primitive(x, cache)
-    end
+-- API --
 
-    return ("local cache = {}\nlocal dump = require(\"%s\")\n"):format(self.require_path) .. result
+-- .get_warnings
+-- .clear_warnings
+-- .ignore_upvalue_size(f)
+-- .require_path
+-- (value)
+
+local dump_mt = {}
+--- @overload fun(value: any): string
+local dump = setmetatable({}, dump_mt)
+
+--- @return string[]
+dump.get_warnings = function() return {unpack(warnings)} end
+
+--- @return nil
+dump.clear_warnings = function() warnings = {} end
+
+--- @generic T: function
+--- @param f T
+--- @return T
+dump.ignore_upvalue_size = function(f)
+  allowed_big_upvalues[f] = true
+  return f
+end
+
+--- @type string
+dump.require_path = select(1, ...)
+
+dump_mt.__call = function(self, x)
+  assert(
+    self.require_path,
+    "Put the lua path to dump libary into dump.require_path before calling dump itself"
+  )
+
+  stack = {}
+  warnings = {}
+  local cache = {size = 0}
+  local result
+  if type(x) == "table" then
+    result = build_table(x, cache)
+  else
+    result = "return " .. handle_primitive(x, cache)
   end
-})
+
+  return ("local cache = {}\nlocal dump = require(\"%s\")\n"):format(self.require_path) .. result
+end
+
+return dump

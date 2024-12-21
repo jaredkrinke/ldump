@@ -1,6 +1,6 @@
 describe("Serialization library", function()
   local dump = require("dump")
-  dump.require_path = "dump"
+  -- dump.require_path = "dump"
   _G.unpack = table.unpack
 
   --- Serialize and deserialize
