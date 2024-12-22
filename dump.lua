@@ -20,6 +20,13 @@ end
 --- @type string
 dump.require_path = select(1, ...)
 
+--- @alias serialize_function fun(any): (string | fun(): any)
+
+--- Custom serialization functions for the exact objects. 
+--- Takes priority over `getmetatable(x).__serialize`
+--- @type table<any, serialize_function>
+dump.custom_serializers = {}
+
 dump_mt.__call = function(self, x)
   assert(
     self.require_path,
@@ -50,14 +57,28 @@ end
 
 build_table = function(x, cache)
   local mt = getmetatable(x)
-  if mt and mt.__serialize then
-    local serialized = mt.__serialize(x)
-    if type(serialized) == "function" then
-      allowed_big_upvalues[serialized] = true
-      return ("return %s()"):format(handle_primitive(serialized, cache))
-    end
-    if type(serialized) == "string" then
-      return "return " .. serialized
+
+  -- TODO! wrong place to handle custom serialization -- strings can have metatables too,
+  --   and custom_serialize can be defined for any type, including userdata & thread
+  do  -- handle custom serializers
+    local custom_serialize = dump.custom_serializers[x] or mt and mt.__serialize
+
+    if custom_serialize then
+      local serialized = custom_serialize(x)
+      local serialized_type = type(serialized)
+
+      if serialized_type == "function" then
+        allowed_big_upvalues[serialized] = true
+        return ("return %s()"):format(handle_primitive(serialized, cache))
+      end
+      if serialized_type == "string" then
+        return "return " .. serialized
+      end
+      table.insert(warnings,
+        ("Serializer returned type %s for %s, falling back to default serialization"):format(
+          serialized_type, table.concat(stack, ".")
+        )
+      )
     end
   end
 

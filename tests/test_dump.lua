@@ -137,5 +137,14 @@ describe("Serialization library", function()
 
       assert.are_equal(1, pass(t))
     end)
+
+    it("custom serializer", function()
+      local t = {value = 1}
+      dump.custom_serializers[t] = function(self)
+        return "1"
+      end
+      assert.are_equal(1, pass(t))
+      dump.custom_serializers[t] = nil
+    end)
   end)
 end)
