@@ -36,12 +36,7 @@ dump_mt.__call = function(self, x)
   stack = {}
   warnings = {}
   local cache = {size = 0}
-  local result
-  if type(x) == "table" then
-    result = build_table(x, cache)
-  else
-    result = "return " .. handle_primitive(x, cache)
-  end
+  local result = "return " .. handle_primitive(x, cache)
 
   return ("local cache = {}\nlocal dump = require(\"%s\")\n"):format(self.require_path) .. result
 end
@@ -57,30 +52,6 @@ end
 
 build_table = function(x, cache)
   local mt = getmetatable(x)
-
-  -- TODO! wrong place to handle custom serialization -- strings can have metatables too,
-  --   and custom_serialize can be defined for any type, including userdata & thread
-  do  -- handle custom serializers
-    local custom_serialize = dump.custom_serializers[x] or mt and mt.__serialize
-
-    if custom_serialize then
-      local serialized = custom_serialize(x)
-      local serialized_type = type(serialized)
-
-      if serialized_type == "function" then
-        allowed_big_upvalues[serialized] = true
-        return ("return %s()"):format(handle_primitive(serialized, cache))
-      end
-      if serialized_type == "string" then
-        return "return " .. serialized
-      end
-      table.insert(warnings,
-        ("Serializer returned type %s for %s, falling back to default serialization"):format(
-          serialized_type, table.concat(stack, ".")
-        )
-      )
-    end
-  end
 
   cache.size = cache.size + 1
   cache[x] = cache.size
@@ -165,6 +136,31 @@ local primitives = {
 }
 
 handle_primitive = function(x, cache)
+  do  -- handle custom serializers
+    local mt = getmetatable(x)
+    local custom_serialize = dump.custom_serializers[x] or mt and mt.__serialize
+
+    if custom_serialize then
+      local serialized = custom_serialize(x)
+      local serialized_type = type(serialized)
+
+      if serialized_type == "string" then
+        return serialized
+      end
+
+      if serialized_type == "function" then
+        allowed_big_upvalues[serialized] = true
+        return ("%s()"):format(handle_primitive(serialized, cache))
+      end
+
+      table.insert(warnings,
+        ("Serializer returned type %s for %s, falling back to default serialization"):format(
+          serialized_type, table.concat(stack, ".")
+        )
+      )
+    end
+  end
+
   local xtype = type(x)
   if not primitives[xtype] then
     table.insert(warnings, ("dump does not support type %q of %s"):format(
