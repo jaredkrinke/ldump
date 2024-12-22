@@ -1,14 +1,54 @@
+local warnings, allowed_big_upvalues, stack, build_table, handle_primitive
+
+-- API --
+
+local dump_mt = {}
+--- @overload fun(value: any): string
+local dump = setmetatable({}, dump_mt)
+
+--- @return string[]
+dump.get_warnings = function() return {unpack(warnings)} end
+
+--- @generic T: function
+--- @param f T
+--- @return T
+dump.ignore_upvalue_size = function(f)
+  allowed_big_upvalues[f] = true
+  return f
+end
+
+--- @type string
+dump.require_path = select(1, ...)
+
+dump_mt.__call = function(self, x)
+  assert(
+    self.require_path,
+    "Put the lua path to dump libary into dump.require_path before calling dump itself"
+  )
+
+  stack = {}
+  warnings = {}
+  local cache = {size = 0}
+  local result
+  if type(x) == "table" then
+    result = build_table(x, cache)
+  else
+    result = "return " .. handle_primitive(x, cache)
+  end
+
+  return ("local cache = {}\nlocal dump = require(\"%s\")\n"):format(self.require_path) .. result
+end
+
+
 -- internal implementation --
+
+allowed_big_upvalues = {}
 
 local to_expression = function(statement)
   return ("(function()\n%s\nend)()"):format(statement)
 end
 
-local handle_primitive
-local stack, warnings
-local allowed_big_upvalues = {}
-
-local build_table = function(x, cache)
+build_table = function(x, cache)
   local mt = getmetatable(x)
   if mt and mt.__serialize then
     local serialized = mt.__serialize(x)
@@ -122,53 +162,5 @@ handle_primitive = function(x, cache)
   return primitives[xtype](x, cache)
 end
 
-
--- API --
-
--- .get_warnings
--- .clear_warnings
--- .ignore_upvalue_size(f)
--- .require_path
--- (value)
-
-local dump_mt = {}
---- @overload fun(value: any): string
-local dump = setmetatable({}, dump_mt)
-
---- @return string[]
-dump.get_warnings = function() return {unpack(warnings)} end
-
---- @return nil
-dump.clear_warnings = function() warnings = {} end
-
---- @generic T: function
---- @param f T
---- @return T
-dump.ignore_upvalue_size = function(f)
-  allowed_big_upvalues[f] = true
-  return f
-end
-
---- @type string
-dump.require_path = select(1, ...)
-
-dump_mt.__call = function(self, x)
-  assert(
-    self.require_path,
-    "Put the lua path to dump libary into dump.require_path before calling dump itself"
-  )
-
-  stack = {}
-  warnings = {}
-  local cache = {size = 0}
-  local result
-  if type(x) == "table" then
-    result = build_table(x, cache)
-  else
-    result = "return " .. handle_primitive(x, cache)
-  end
-
-  return ("local cache = {}\nlocal dump = require(\"%s\")\n"):format(self.require_path) .. result
-end
 
 return dump
