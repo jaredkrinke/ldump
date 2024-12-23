@@ -26,7 +26,7 @@ ldump.get_warnings() -> string[]
 
 Get the list of warnings from the last ldump call.
 
-See [`ldump.strict_mode`](README.md#ldump.strict_mode)
+See [`ldump.strict_mode`](#ldumpstrict_mode)
 
 ### ldump.ignore_upvalue_size
 
