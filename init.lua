@@ -27,6 +27,9 @@ ldump.require_path = select(1, ...)
 --- @type table<any, serialize_function>
 ldump.custom_serializers = {}
 
+--- @type boolean
+ldump.strict_mode = true
+
 ldump_mt.__call = function(self, x)
   assert(
     self.require_path,
@@ -153,19 +156,26 @@ handle_primitive = function(x, cache)
         return ("%s()"):format(handle_primitive(serialized, cache))
       end
 
-      table.insert(warnings,
-        ("Serializer returned type %s for %s, falling back to default serialization"):format(
-          serialized_type, table.concat(stack, ".")
-        )
-      )
+      local which_serializer = ldump.custom_serializers[x]
+        and "ldump.custom_serializers[x]"
+        or "getmetatable(x).__serialize"
+
+      error(("%s returned type %s for %s")
+        :format(which_serializer, serialized_type, table.concat(stack, ".")))
     end
   end
 
   local xtype = type(x)
   if not primitives[xtype] then
-    table.insert(warnings, ("ldump does not support type %q of %s"):format(
+    local message = ("ldump does not support type %q of %s"):format(
       xtype, table.concat(stack, ".")
-    ))
+    )
+
+    if ldump.strict_mode then
+      error(message)
+    end
+
+    table.insert(warnings, message)
     return "nil"
   end
 

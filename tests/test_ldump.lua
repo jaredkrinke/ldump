@@ -159,7 +159,7 @@ describe("Overriding serialization:", function()
   end)
 end)
 
-describe("Warnings:", function()
+describe("Error handling:", function()
   describe("excessively big upvalues", function()
     local upvalue = ""
     for _ = 1, 100 do
@@ -179,6 +179,32 @@ describe("Warnings:", function()
       ldump.ignore_upvalue_size(f)
       ldump(f)
       assert.are_equal(0, #ldump.get_warnings())
+    end)
+  end)
+
+  it("wrong serializer return type always causes an error", function()
+    local t = setmetatable({}, {__serialize = function(self)
+      return 42
+    end})
+
+    local success = pcall(ldump --[[ @as function ]], t)
+
+    assert.is_false(success)
+  end)
+
+  describe("unsupported type", function()
+    local c = coroutine.create(function() end)
+
+    it("causes an error in strict mode", function()
+      local success = pcall(ldump --[[ @as function ]], c)
+      assert.is_false(success)
+    end)
+
+    it("writes a warning in non-strict mode", function()
+      ldump.strict_mode = false
+      ldump(c)
+      assert.are_equal(1, #ldump.get_warnings())
+      ldump.strict_mode = true
     end)
   end)
 end)
