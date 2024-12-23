@@ -3,30 +3,46 @@ local warnings, allowed_big_upvalues, stack, build_table, handle_primitive
 -- API --
 
 local ldump_mt = {}
+
+--- Serialization library, can be called directly.
+--- Serialize given value to a string, that can be deserialized via `load`.
 --- @overload fun(value: any): string
 local ldump = setmetatable({}, ldump_mt)
 
+--- Get the list of warnings from the last ldump call.
+---
+--- See `ldump.strict_mode`.
 --- @return string[]
 ldump.get_warnings = function() return {unpack(warnings)} end
 
+--- Mark function, causing dump to stop producing upvalue size warnings.
+---
+--- Upvalues can cause large modules to be serialized implicitly. Warnings allow to track that.
 --- @generic T: function
 --- @param f T
---- @return T
+--- @return T # returns the same function
 ldump.ignore_upvalue_size = function(f)
   allowed_big_upvalues[f] = true
   return f
 end
 
+--- `require`-style path to the ldump module, used in deserialization.
+---
+--- Inferred from requiring the ldump itself, can be changed.
 --- @type string
 ldump.require_path = select(1, ...)
 
 --- @alias serialize_function fun(any): (string | fun(): any)
 
 --- Custom serialization functions for the exact objects. 
---- Takes priority over `getmetatable(x).__serialize`
+---
+--- Key is the value that can be serialized, value is its serialization function.
+--- Takes priority over `getmetatable(x).__serialize`.
 --- @type table<any, serialize_function>
 ldump.custom_serializers = {}
 
+--- If true (by default), `ldump` treats unserializable data as an error, if false produces a
+--- warning.
 --- @type boolean
 ldump.strict_mode = true
 
