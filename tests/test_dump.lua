@@ -158,3 +158,27 @@ describe("Overriding serialization:", function()
     dump.custom_serializers[thread] = nil
   end)
 end)
+
+describe("Warnings:", function()
+  describe("excessively big upvalues", function()
+    local upvalue = ""
+    for _ = 1, 100 do
+      upvalue = upvalue .. "AAAAAAAAAAAAAAAAAAAAA"
+    end
+    -- upvalue is of size 2100, which is exceeds the limit of 2048
+    local f = function()
+      return upvalue
+    end
+
+    it("produce warning by default", function()
+      dump(f)
+      assert.are_equal(1, #dump.get_warnings())
+    end)
+
+    it("omit warning if marked with ignore_upvalue_size", function()
+      dump.ignore_upvalue_size(f)
+      dump(f)
+      assert.are_equal(0, #dump.get_warnings())
+    end)
+  end)
+end)
