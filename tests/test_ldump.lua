@@ -1,10 +1,10 @@
-local dump = require("dump")
--- dump.require_path = "dump"
+local ldump = require("init")
+-- ldump.require_path = "ldump"
 _G.unpack = table.unpack
 
 --- Serialize and deserialize
 local pass = function(value)
-  return load(dump(value))()
+  return load(ldump(value))()
 end
 
 describe("Serializing primitives:", function()
@@ -111,7 +111,7 @@ describe("Serializing table graphs:", function()
   it("tables as keys", function()
     local t = {}
     t[t] = t
-    local result = load(dump(t))()
+    local result = load(ldump(t))()
     -- assert.are_same(t, result)
     -- lol my library works better than busted
     assert.are_equal(result[result], result)
@@ -139,11 +139,11 @@ describe("Overriding serialization:", function()
 
   it("custom serializer", function()
     local t = {value = 1}
-    dump.custom_serializers[t] = function(self)
+    ldump.custom_serializers[t] = function(self)
       return "1"
     end
     assert.are_equal(1, pass(t))
-    dump.custom_serializers[t] = nil
+    ldump.custom_serializers[t] = nil
   end)
 
   it("custom serializer -- threads", function()
@@ -151,11 +151,11 @@ describe("Overriding serialization:", function()
       coroutine.yield()
       return 1
     end)
-    dump.custom_serializers[thread] = function(_)
+    ldump.custom_serializers[thread] = function(_)
       return "404"
     end
     assert.are_equal(404, pass(thread))
-    dump.custom_serializers[thread] = nil
+    ldump.custom_serializers[thread] = nil
   end)
 end)
 
@@ -171,14 +171,14 @@ describe("Warnings:", function()
     end
 
     it("produce warning by default", function()
-      dump(f)
-      assert.are_equal(1, #dump.get_warnings())
+      ldump(f)
+      assert.are_equal(1, #ldump.get_warnings())
     end)
 
     it("omit warning if marked with ignore_upvalue_size", function()
-      dump.ignore_upvalue_size(f)
-      dump(f)
-      assert.are_equal(0, #dump.get_warnings())
+      ldump.ignore_upvalue_size(f)
+      ldump(f)
+      assert.are_equal(0, #ldump.get_warnings())
     end)
   end)
 end)

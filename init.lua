@@ -2,35 +2,35 @@ local warnings, allowed_big_upvalues, stack, build_table, handle_primitive
 
 -- API --
 
-local dump_mt = {}
+local ldump_mt = {}
 --- @overload fun(value: any): string
-local dump = setmetatable({}, dump_mt)
+local ldump = setmetatable({}, ldump_mt)
 
 --- @return string[]
-dump.get_warnings = function() return {unpack(warnings)} end
+ldump.get_warnings = function() return {unpack(warnings)} end
 
 --- @generic T: function
 --- @param f T
 --- @return T
-dump.ignore_upvalue_size = function(f)
+ldump.ignore_upvalue_size = function(f)
   allowed_big_upvalues[f] = true
   return f
 end
 
 --- @type string
-dump.require_path = select(1, ...)
+ldump.require_path = select(1, ...)
 
 --- @alias serialize_function fun(any): (string | fun(): any)
 
 --- Custom serialization functions for the exact objects. 
 --- Takes priority over `getmetatable(x).__serialize`
 --- @type table<any, serialize_function>
-dump.custom_serializers = {}
+ldump.custom_serializers = {}
 
-dump_mt.__call = function(self, x)
+ldump_mt.__call = function(self, x)
   assert(
     self.require_path,
-    "Put the lua path to dump libary into dump.require_path before calling dump itself"
+    "Put the lua path to ldump libary into ldump.require_path before calling ldump itself"
   )
 
   stack = {}
@@ -38,7 +38,7 @@ dump_mt.__call = function(self, x)
   local cache = {size = 0}
   local result = "return " .. handle_primitive(x, cache)
 
-  return ("local cache = {}\nlocal dump = require(\"%s\")\n"):format(self.require_path) .. result
+  return ("local cache = {}\nlocal ldump = require(\"%s\")\n"):format(self.require_path) .. result
 end
 
 
@@ -87,14 +87,14 @@ local build_function = function(x, cache)
   local ok, res = pcall(string.dump, x)
 
   if not ok then
-    error("Unable to dump function " .. table.concat(stack, "."))
+    error("Unable to ldump function " .. table.concat(stack, "."))
   end
 
   result[1] = "local _ = " .. ([[load(%q)]]):format(res)
   result[2] = ("cache[%s] = _"):format(cache.size)
 
   if allowed_big_upvalues[x] then
-    result[3] = "dump.ignore_upvalue_size(_)"
+    result[3] = "ldump.ignore_upvalue_size(_)"
   end
 
   for i = 1, math.huge do
@@ -138,7 +138,7 @@ local primitives = {
 handle_primitive = function(x, cache)
   do  -- handle custom serializers
     local mt = getmetatable(x)
-    local custom_serialize = dump.custom_serializers[x] or mt and mt.__serialize
+    local custom_serialize = ldump.custom_serializers[x] or mt and mt.__serialize
 
     if custom_serialize then
       local serialized = custom_serialize(x)
@@ -163,7 +163,7 @@ handle_primitive = function(x, cache)
 
   local xtype = type(x)
   if not primitives[xtype] then
-    table.insert(warnings, ("dump does not support type %q of %s"):format(
+    table.insert(warnings, ("ldump does not support type %q of %s"):format(
       xtype, table.concat(stack, ".")
     ))
     return "nil"
@@ -180,4 +180,4 @@ handle_primitive = function(x, cache)
 end
 
 
-return dump
+return ldump
