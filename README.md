@@ -61,6 +61,8 @@ Run yourself at [/tests/test_use_case.lua:19](/tests/test_use_case.lua#L19)
 
 ## Installation
 
+Copy the [raw contents of init.lua](https://raw.githubusercontent.com/girvel/ldump/refs/heads/master/init.lua) into your `lib/ldump.lua` or `git clone https://github.com/girvel/ldump` inside the `lib/` — you still would be able to do `require("ldump")`
+
 ## API
 
 ### ldump
@@ -126,3 +128,14 @@ ldump.strict_mode: boolean = true
 ```
 
 If true (by default), `ldump` treats unserializable data as an error, if false produces a warning.
+
+## Development
+
+### Testing
+
+Via [busted](https://github.com/lunarmodules/busted):
+
+```bash
+busted
+```
+
