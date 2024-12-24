@@ -184,16 +184,17 @@ handle_primitive = function(x, cache)
         and "ldump.custom_serializers[x]"
         or "getmetatable(x).__serialize"
 
-      error(("%s returned type %s for %s")
+      error(("%s returned type %s for %s; serializers should return string or function")
         :format(which_serializer, serialized_type, table.concat(stack, ".")))
     end
   end
 
   local xtype = type(x)
   if not primitives[xtype] then
-    local message = ("ldump does not support type %q of %s"):format(
-      xtype, table.concat(stack, ".")
-    )
+    local message = (
+      "ldump does not support serializing type %q of %s; use `__serialize` metamethod or " ..
+      "`ldump.custom_serializers` to define serialization"
+    ):format(xtype, table.concat(stack, "."))
 
     if ldump.strict_mode then
       error(message)
