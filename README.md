@@ -61,7 +61,7 @@ Run yourself at [/tests/test_use_case.lua:19](/tests/test_use_case.lua#L19)
 
 ## Installation
 
-Copy the [raw contents of init.lua](https://raw.githubusercontent.com/girvel/ldump/refs/heads/master/init.lua) into your `lib/ldump.lua` or `git clone https://github.com/girvel/ldump` inside the `lib/` — you still would be able to do `require("ldump")`
+Copy the [raw contents of init.lua](https://raw.githubusercontent.com/girvel/ldump/refs/heads/master/init.lua) into your `lib/ldump.lua` or `git clone https://github.com/girvel/ldump` inside the `lib/` — you still would be able to do `require("ldump")`.
 
 ## API
 
@@ -131,6 +131,8 @@ If true (by default), `ldump` treats unserializable data as an error, if false p
 
 ## Development
 
+Most of the development happenened in [girvel/fallen](https://github.com/girvel/fallen), this repository was created afterwards.
+
 ### Testing
 
 Via [busted](https://github.com/lunarmodules/busted):
@@ -139,3 +141,6 @@ Via [busted](https://github.com/lunarmodules/busted):
 busted
 ```
 
+### Plans
+
+Serialization in dynamic languages such as Lua (especially serializing upvalues) has an issue of capturing large chunks of data from modules and libraries, growing the size of the output and causing issues with `==`. [girvel/fallen](https://github.com/girvel/fallen) handles this problem through [module](https://github.com/girvel/fallen/blob/master/lib/module.lua) module, explicitly marking all static data (see [tech.sound](https://github.com/girvel/fallen/blob/master/tech/sound.lua)). This solution seems too verbose and causes boilerplate; right now, an attempt to write a better solution is in progress (see [2.0 milestone](https://github.com/girvel/ldump/milestone/2)).
