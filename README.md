@@ -109,7 +109,7 @@ Inferred from requiring the ldump itself, can be changed.
 type serialize_function = fun(any): (string | fun(): any)
 ```
 
-Type of any serialize function, either defined in `getmetatable(x).__serialize` or passed through
+Signature of any serialize function, either defined in `getmetatable(x).__serialize` or `ldump.custom_serializers`.
 
 ### ldump.custom_serializers
 
