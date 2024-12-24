@@ -4,7 +4,60 @@
 
 ## TL;DR show me the code
 
-(test here)
+```lua
+local ldump = require("ldump")
+
+local upvalue = 42
+local world = {
+  name = "New world",
+  get_answer = function() return upvalue end,
+}
+
+local serialized_data = ldump(world)
+local loaded_world = load(serialized_data)()
+```
+
+Run yourself at [/tests/test_use_case.lua:3](/tests/test_use_case.lua#L3)
+
+## The full power of ldump
+
+```lua
+local ldump = require("ldump")
+
+-- basic tables
+local game_state = {
+  player = {name = "Player"},
+  boss = {name = "Boss"},
+}
+
+-- circular references & tables as keys
+game_state.deleted_entities = {
+  [game_state.boss] = true,
+}
+
+-- functions even with upvalues
+local upvalue = 42
+game_state.get_answer = function() return upvalue end
+
+-- fundamentally non-serializable types if overriden
+local create_coroutine = function()
+  return coroutine.wrap(function()
+    coroutine.yield(1337)
+    coroutine.yield(420)
+  end)
+end
+
+game_state.coroutine = create_coroutine()
+ldump.custom_serializers[game_state.coroutine] = function()
+  return create_coroutine
+end
+
+-- act
+local serialized_data = ldump(game_state)
+local loaded_game_state = load(serialized_data)()
+```
+
+Run yourself at [/tests/test_use_case.lua:19](/tests/test_use_case.lua#L19)
 
 ## Installation
 

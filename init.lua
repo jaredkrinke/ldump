@@ -121,7 +121,12 @@ local build_function = function(x, cache)
     if not k then break end
 
     table.insert(stack, ("<upvalue %s>"):format(k))
-    local upvalue = handle_primitive(v, cache)
+    local upvalue
+    if k == "_ENV" then
+      upvalue = "_ENV"
+    else
+      upvalue = handle_primitive(v, cache)
+    end
     table.remove(stack)
 
     if not allowed_big_upvalues[x] and #upvalue > 2048 then
