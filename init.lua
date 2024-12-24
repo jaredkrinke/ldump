@@ -106,7 +106,10 @@ local build_function = function(x, cache)
   local ok, res = pcall(string.dump, x)
 
   if not ok then
-    error("Unable to ldump function " .. table.concat(stack, "."))
+    error((
+      "Function %s is not `string.dump`-compatible; if it uses coroutines, use " ..
+      "`ldump.custom_serializers`"
+    ):format(table.concat(stack, ".")))
   end
 
   result[1] = "local _ = " .. ([[load(%q)]]):format(res)
