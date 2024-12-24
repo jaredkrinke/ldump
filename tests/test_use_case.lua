@@ -1,3 +1,6 @@
+-- NOTICE all tests in this file are represented in README, and should be updated there each time
+--   they are updated here
+
 _G.unpack = unpack or table.unpack
 
 it("Basic use case", function()
@@ -43,9 +46,7 @@ it("Serializing any lua data", function()
   end
 
   game_state.coroutine = create_coroutine()
-  ldump.custom_serializers[game_state.coroutine] = function()
-    return create_coroutine
-  end
+  ldump.custom_serializers[game_state.coroutine] = create_coroutine
 
   -- act
   local serialized_data = ldump(game_state)
@@ -59,4 +60,44 @@ it("Serializing any lua data", function()
   assert.are_same(game_state.player, loaded_game_state.player)
   assert.are_same(game_state.boss, loaded_game_state.boss)
   assert.are_same(game_state.deleted_entities[game_state.boss], loaded_game_state.deleted_entities[loaded_game_state.boss])
+end)
+
+it("Using metatables for serialization override", function()
+  local ldump = require("init")
+
+  local create_container = function()
+    return {
+      inner = coroutine.create(function()
+        coroutine.yield(1)
+        coroutine.yield(2)
+      end)
+    }
+  end
+
+  local t = setmetatable(create_container(), {
+    __serialize = function(self) return create_container end,
+  })
+
+  local t_copy = load(ldump(t))()
+
+  assert.are_equal(coroutine.resume(t.inner), coroutine.resume(t_copy.inner))
+  assert.are_equal(coroutine.resume(t.inner), coroutine.resume(t_copy.inner))
+end)
+
+it("Using custom_serializers for serialization override", function()
+  local ldump = require("init")
+
+  local create_coroutine = function()
+    return coroutine.create(function()
+      coroutine.yield(1)
+      coroutine.yield(2)
+    end)
+  end
+
+  local c = create_coroutine()
+  ldump.custom_serializers[c] = create_coroutine
+  local c_copy = load(ldump(c))()
+
+  assert.are_equal(coroutine.resume(c), coroutine.resume(c_copy))
+  assert.are_equal(coroutine.resume(c), coroutine.resume(c_copy))
 end)

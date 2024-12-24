@@ -139,9 +139,7 @@ describe("Overriding serialization:", function()
 
   it("custom serializer", function()
     local t = {value = 1}
-    ldump.custom_serializers[t] = function(self)
-      return "1"
-    end
+    ldump.custom_serializers[t] = "1"
     assert.are_equal(1, pass(t))
     ldump.custom_serializers[t] = nil
   end)
@@ -151,9 +149,7 @@ describe("Overriding serialization:", function()
       coroutine.yield()
       return 1
     end)
-    ldump.custom_serializers[thread] = function(_)
-      return "404"
-    end
+    ldump.custom_serializers[thread] = "404"
     assert.are_equal(404, pass(thread))
     ldump.custom_serializers[thread] = nil
   end)

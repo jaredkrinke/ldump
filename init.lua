@@ -9,6 +9,15 @@ local ldump_mt = {}
 --- @overload fun(value: any): string
 local ldump = setmetatable({}, ldump_mt)
 
+--- @alias deserializer string | fun(): any
+
+--- Custom serialization functions for the exact objects. 
+---
+--- Key is the value that can be serialized, value is its serialization function.
+--- Takes priority over `getmetatable(x).__serialize`.
+--- @type table<any, deserializer>
+ldump.custom_serializers = {}
+
 --- Get the list of warnings from the last ldump call.
 ---
 --- See `ldump.strict_mode`.
@@ -26,25 +35,16 @@ ldump.ignore_upvalue_size = function(f)
   return f
 end
 
+--- If true (by default), `ldump` treats unserializable data as an error, if false produces a
+--- warning.
+--- @type boolean
+ldump.strict_mode = true
+
 --- `require`-style path to the ldump module, used in deserialization.
 ---
 --- Inferred from requiring the ldump itself, can be changed.
 --- @type string
 ldump.require_path = select(1, ...)
-
---- @alias serialize_function fun(any): (string | fun(): any)
-
---- Custom serialization functions for the exact objects. 
----
---- Key is the value that can be serialized, value is its serialization function.
---- Takes priority over `getmetatable(x).__serialize`.
---- @type table<any, serialize_function>
-ldump.custom_serializers = {}
-
---- If true (by default), `ldump` treats unserializable data as an error, if false produces a
---- warning.
---- @type boolean
-ldump.strict_mode = true
 
 ldump_mt.__call = function(self, x)
   assert(
@@ -165,19 +165,18 @@ local primitives = {
 handle_primitive = function(x, cache)
   do  -- handle custom serializers
     local mt = getmetatable(x)
-    local custom_serialize = ldump.custom_serializers[x] or mt and mt.__serialize
+    local deserializer = ldump.custom_serializers[x] or mt and mt.__serialize and mt.__serialize(x)
 
-    if custom_serialize then
-      local serialized = custom_serialize(x)
-      local serialized_type = type(serialized)
+    if deserializer then
+      local deserializer_type = type(deserializer)
 
-      if serialized_type == "string" then
-        return serialized
+      if deserializer_type == "string" then
+        return deserializer
       end
 
-      if serialized_type == "function" then
-        allowed_big_upvalues[serialized] = true
-        return ("%s()"):format(handle_primitive(serialized, cache))
+      if deserializer_type == "function" then
+        allowed_big_upvalues[deserializer] = true
+        return ("%s()"):format(handle_primitive(deserializer, cache))
       end
 
       local which_serializer = ldump.custom_serializers[x]
@@ -185,7 +184,7 @@ handle_primitive = function(x, cache)
         or "getmetatable(x).__serialize"
 
       error(("%s returned type %s for %s; serializers should return string or function")
-        :format(which_serializer, serialized_type, table.concat(stack, ".")))
+        :format(which_serializer, deserializer_type, table.concat(stack, ".")))
     end
   end
 

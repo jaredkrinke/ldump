@@ -1,6 +1,6 @@
 # ldump — serializer for any lua type
 
-(description)
+`ldump` is a flexible serializer, able to serialize any data, starting with circular references, tables as keys, functions with upvalues, metatables and ending with coroutines, threads and userdata (by defining how they should be serialized). It outputs valid Lua code that recreates the original object, doing the deserialization through `load(data)()`. It aims for functionality and flexibility instead of speed and size, allowing full serialization of complex data, such as videogame saves.
 
 ## TL;DR show me the code
 
@@ -48,9 +48,7 @@ local create_coroutine = function()
 end
 
 game_state.coroutine = create_coroutine()
-ldump.custom_serializers[game_state.coroutine] = function()
-  return create_coroutine
-end
+ldump.custom_serializers[game_state.coroutine] = create_coroutine
 
 -- act
 local serialized_data = ldump(game_state)
@@ -63,6 +61,13 @@ Run yourself at [/tests/test_use_case.lua:19](/tests/test_use_case.lua#L19)
 
 Copy the [raw contents of init.lua](https://raw.githubusercontent.com/girvel/ldump/refs/heads/master/init.lua) into your `lib/ldump.lua` or `git clone https://github.com/girvel/ldump` inside the `lib/` — you still would be able to do `require("ldump")`.
 
+## Overriding serialization
+
+`ldump` handles serialization overload in two ways: through defining custom serialization metamethod or through assigning custom serializer for the exact value.
+
+```lua
+```
+
 ## API
 
 ### ldump
@@ -72,6 +77,16 @@ ldump(value: any) -> string
 ```
 
 Serialize given value to a string, that can be deserialized via `load`
+
+### ldump.custom_serializers
+
+```lua
+ldump.custom_serializers: table<any, string | fun(): any> = {}
+```
+
+Custom serialization functions for the exact objects.
+
+Key is the value that can be serialized, value is its serialization function. Takes priority over `getmetatable(x).__serialize`.
 
 ### ldump.get_warnings
 
@@ -93,6 +108,14 @@ Mark function, causing dump to stop producing upvalue size warnings.
 
 Upvalues can cause large modules to be serialized implicitly. Warnings allow to track that. Returns the same function.
 
+### ldump.strict_mode
+
+```lua
+ldump.strict_mode: boolean = true
+```
+
+If true (by default), `ldump` treats unserializable data as an error, if false produces a warning.
+
 ### ldump.require_path
 
 ```lua
@@ -102,32 +125,6 @@ ldump.require_path: string
 `require`-style path to the ldump module, used in deserialization.
 
 Inferred from requiring the ldump itself, can be changed.
-
-### serialize_function
-
-```lua
-type serialize_function = fun(any): (string | fun(): any)
-```
-
-Signature of any serialize function, either defined in `getmetatable(x).__serialize` or `ldump.custom_serializers`.
-
-### ldump.custom_serializers
-
-```lua
-ldump.custom_serializers: table<any, serialize_function> = {}
-```
-
-Custom serialization functions for the exact objects.
-
-Key is the value that can be serialized, value is its serialization function. Takes priority over `getmetatable(x).__serialize`.
-
-### ldump.strict_mode
-
-```lua
-ldump.strict_mode: boolean = true
-```
-
-If true (by default), `ldump` treats unserializable data as an error, if false produces a warning.
 
 ## Development
 
