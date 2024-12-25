@@ -24,8 +24,11 @@ ldump.custom_serializers = {}
 --- Additionally, marks all data inside to be deserialized by requiring the module.
 --- @param modname string
 ldump.require = function(modname)
+  local is_currently_loaded = package.loaded[modname]
   local result = require(modname)
-  mark_as_static(result, modname, {})
+  if not is_currently_loaded then
+    mark_as_static(result, modname, {})
+  end
   return result
 end
 

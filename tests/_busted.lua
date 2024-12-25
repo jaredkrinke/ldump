@@ -26,4 +26,9 @@ assert.are_equal = function(expected, received) end
 --- @generic T
 --- @param expected T
 --- @param received T
+assert.are_not_equal = function(expected, received) end
+
+--- @generic T
+--- @param expected T
+--- @param received T
 assert.are_same = function(expected, received) end

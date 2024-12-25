@@ -12,5 +12,19 @@ it("Basic usage", function()
   assert.are_equal(example_module.coroutine, pass(example_module.coroutine))
 end)
 
--- TODO keeping == through multiple sessions
+it("Persisting through multiple sessions", function()
+  local path = "tests.resources.example_module"
+  local example_module_1 = ldump.require(path)
+  local serialized = ldump(example_module_1)
+
+  -- emulate new session
+  package.loaded[path] = nil
+  local example_module_2 = ldump.require(path)
+  local copy_2 = load(serialized)()
+
+  assert.are_equal(copy_2, example_module_2)
+  assert.are_not_equal(copy_2, example_module_1)
+end)
+
 -- TODO serializing/deserializing 2 times
+-- TODO saving metatables
