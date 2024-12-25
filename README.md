@@ -1,6 +1,6 @@
 # ldump — serializer for any lua type
 
-`ldump` is a flexible serializer, able to serialize any data, starting with circular references, tables as keys, functions with upvalues, metatables and ending with coroutines, threads and userdata (by defining how they should be serialized). It outputs valid Lua code that recreates the original object, doing the deserialization through `load(data)()`. It aims for functionality and flexibility instead of speed and size, allowing full serialization of complex data, such as videogame saves. The output is large, but can be drastically reduced with modern compression algorithms.
+`ldump` is a flexible serializer, able to serialize any data, starting with circular references, tables as keys, functions with upvalues, metatables and ending with coroutines, threads and userdata (by defining how they should be serialized). It outputs valid Lua code that recreates the original object, doing the deserialization through `load(data)()`. It aims for functionality and flexibility instead of speed and size, allowing full serialization of complex data, such as video game saves. The output is large, but can be drastically reduced with modern compression algorithms.
 
 Inspired by [`Ser`](https://github.com/gvx/Ser).
 
@@ -78,7 +78,7 @@ Copy the [raw contents of init.lua](https://raw.githubusercontent.com/girvel/ldu
 
 ## Overriding serialization
 
-`ldump` handles serialization overload in two ways: through defining custom serialization metamethod or through assigning custom serializer for the exact value. See [`__serialize`](#__serialize), [`ldump.custom_serializers`](#ldumpcustom_serializers).
+`ldump` handles serialization overload in two ways: through defining a custom serialization metamethod or through assigning a custom serializer for the exact value. See [`__serialize`](#__serialize), [`ldump.custom_serializers`](#ldumpcustom_serializers).
 
 
 ## API
@@ -198,7 +198,7 @@ Inferred from requiring the ldump itself, can be changed.
 
 ## Development
 
-Most of the development happenened in [girvel/fallen](https://github.com/girvel/fallen), this repository was created afterwards.
+Most of the development happened in [girvel/fallen](https://github.com/girvel/fallen), this repository was created afterwards.
 
 ### Testing
 
