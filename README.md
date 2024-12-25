@@ -1,6 +1,20 @@
 # ldump — serializer for any lua type
 
-`ldump` is a flexible serializer, able to serialize any data, starting with circular references, tables as keys, functions with upvalues, metatables and ending with coroutines, threads and userdata (by defining how they should be serialized). It outputs valid Lua code that recreates the original object, doing the deserialization through `load(data)()`. It aims for functionality and flexibility instead of speed and size, allowing full serialization of complex data, such as videogame saves.
+| Type       | Support      |
+| ----       | ------------ |
+| nil        | full         |
+| boolean    | full         |
+| number     | full         |
+| string     | full         |
+| function   | full         |
+| userdata   | user-defined |
+| thread     | user-defined |
+| table      | full         |
+| metatables | full         |
+
+`ldump` is a flexible serializer, able to serialize any data, starting with circular references, tables as keys, functions with upvalues, metatables and ending with coroutines, threads and userdata (by defining how they should be serialized). It outputs valid Lua code that recreates the original object, doing the deserialization through `load(data)()`. It aims for functionality and flexibility instead of speed and size, allowing full serialization of complex data, such as videogame saves. The output is large, but can be drastically reduced with modern compression algorithms.
+
+Inspired by [`Ser`](https://github.com/gvx/Ser).
 
 
 ## TL;DR show me the code
