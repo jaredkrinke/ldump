@@ -1,5 +1,5 @@
 unpack = unpack or table.unpack
-local warnings, allowed_big_upvalues, stack, build_table, handle_primitive
+local warnings, allowed_big_upvalues, stack, build_table, handle_primitive, mark_as_static
 
 -- API --
 
@@ -18,6 +18,16 @@ local ldump = setmetatable({}, ldump_mt)
 --- string or function. Takes priority over `__serialize`.
 --- @type table<any, deserializer>
 ldump.custom_serializers = {}
+
+--- Loads the given module, returns any value returned by the given module (`true` when `nil`).
+--- 
+--- Additionally, marks all data inside to be deserialized by requiring the module.
+--- @param modname string
+ldump.require = function(modname)
+  local result = require(modname)
+  mark_as_static(result, modname, {})
+  return result
+end
 
 --- Get the list of warnings from the last ldump call.
 ---
@@ -212,6 +222,40 @@ handle_primitive = function(x, cache)
   end
 
   return primitives[xtype](x, cache)
+end
+
+local reference_types = {
+  string = true,
+  ["function"] = true,
+  userdata = true,
+  thread = true,
+  table = true,
+}
+
+mark_as_static = function(value, module_path, key_path)
+  local value_type = type(value)
+  if not reference_types[value_type] then return end
+
+  do
+    local key_path_copy = {unpack(key_path)}
+    local ldump_require_path = ldump.require_path
+
+    ldump.custom_serializers[value] = function()
+      local result = require(ldump_require_path).require(module_path)
+      for _, key in ipairs(key_path_copy) do
+        result = result[key]
+      end
+      return result
+    end
+  end
+
+  if value_type ~= "table" then return end
+
+  for k, v in pairs(value) do
+    table.insert(key_path, k)
+    mark_as_static(v, module_path, key_path)
+    table.remove(key_path)
+  end
 end
 
 
