@@ -13,8 +13,8 @@ local ldump = setmetatable({}, ldump_mt)
 
 --- Custom serialization functions for the exact objects. 
 ---
---- Key is the value that can be serialized, value is its serialization function.
---- Takes priority over `getmetatable(x).__serialize`.
+--- Key is the value that can be serialized, value is a deserializer in form of `load`-compatible
+--- string or function. Takes priority over `__serialize`.
 --- @type table<any, deserializer>
 ldump.custom_serializers = {}
 

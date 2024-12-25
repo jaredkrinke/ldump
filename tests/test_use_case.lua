@@ -65,21 +65,31 @@ end)
 it("Using metatables for serialization override", function()
   local ldump = require("init")
 
-  local create_container = function()
-    return {
-      inner = coroutine.create(function()
-        coroutine.yield(1)
-        coroutine.yield(2)
-      end)
-    }
-  end
-
-  local t = setmetatable(create_container(), {
-    __serialize = function(self) return create_container end,
+  local t = setmetatable({
+    creation_time = os.clock(),
+    inner = coroutine.create(function()
+      coroutine.yield(1)
+      coroutine.yield(2)
+    end)
+  }, {
+    __serialize = function(self)
+      local creation_time = self.creation_time  -- capturing upvalue
+      return function()
+        return {
+          creation_time = creation_time,
+          inner = coroutine.create(function()
+            coroutine.yield(1)
+            coroutine.yield(2)
+          end)
+        }
+      end
+    end,
   })
 
-  local t_copy = load(ldump(t))()
+  local data = ldump(t)
+  local t_copy = load(data)()
 
+  assert.are_equal(t.creation_time, t_copy.creation_time)
   assert.are_equal(coroutine.resume(t.inner), coroutine.resume(t_copy.inner))
   assert.are_equal(coroutine.resume(t.inner), coroutine.resume(t_copy.inner))
 end)
@@ -96,7 +106,8 @@ it("Using custom_serializers for serialization override", function()
 
   local c = create_coroutine()
   ldump.custom_serializers[c] = create_coroutine
-  local c_copy = load(ldump(c))()
+  local data = ldump(c)
+  local c_copy = load(data)()
 
   assert.are_equal(coroutine.resume(c), coroutine.resume(c_copy))
   assert.are_equal(coroutine.resume(c), coroutine.resume(c_copy))

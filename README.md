@@ -2,6 +2,7 @@
 
 `ldump` is a flexible serializer, able to serialize any data, starting with circular references, tables as keys, functions with upvalues, metatables and ending with coroutines, threads and userdata (by defining how they should be serialized). It outputs valid Lua code that recreates the original object, doing the deserialization through `load(data)()`. It aims for functionality and flexibility instead of speed and size, allowing full serialization of complex data, such as videogame saves.
 
+
 ## TL;DR show me the code
 
 ```lua
@@ -17,7 +18,8 @@ local serialized_data = ldump(world)
 local loaded_world = load(serialized_data)()
 ```
 
-Run yourself at [/tests/test_use_case.lua:3](/tests/test_use_case.lua#L3)
+See as a test at [/tests/test_use_case.lua:3](/tests/test_use_case.lua#L3)
+
 
 ## The full power of ldump
 
@@ -55,18 +57,18 @@ local serialized_data = ldump(game_state)
 local loaded_game_state = load(serialized_data)()
 ```
 
-Run yourself at [/tests/test_use_case.lua:19](/tests/test_use_case.lua#L19)
+See as a test at [/tests/test_use_case.lua:19](/tests/test_use_case.lua#L19)
+
 
 ## Installation
 
 Copy the [raw contents of init.lua](https://raw.githubusercontent.com/girvel/ldump/refs/heads/master/init.lua) into your `lib/ldump.lua` or `git clone https://github.com/girvel/ldump` inside the `lib/` — you still would be able to do `require("ldump")`.
 
+
 ## Overriding serialization
 
-`ldump` handles serialization overload in two ways: through defining custom serialization metamethod or through assigning custom serializer for the exact value.
+`ldump` handles serialization overload in two ways: through defining custom serialization metamethod or through assigning custom serializer for the exact value. See [`__serialize`](#__serialize), [`ldump.custom_serializers`](#ldumpcustom_serializers).
 
-```lua
-```
 
 ## API
 
@@ -86,7 +88,63 @@ ldump.custom_serializers: table<any, string | fun(): any> = {}
 
 Custom serialization functions for the exact objects.
 
-Key is the value that can be serialized, value is its serialization function. Takes priority over `getmetatable(x).__serialize`.
+Key is the value that can be serialized, value is a deserializer in form of `load`-compatible string or function. Takes priority over [`__serialize`](#__serialize).
+
+#### Example
+
+```lua
+local create_coroutine = function()
+  return coroutine.create(function()
+    coroutine.yield(1)
+    coroutine.yield(2)
+  end)
+end
+
+local c = create_coroutine()
+ldump.custom_serializers[c] = create_coroutine
+local data = ldump(c)
+local c_copy = load(data)()
+```
+
+See as a test at [/tests/test_use_case.lua:97](/tests/test_use_case.lua#L97)
+
+### `__serialize`
+
+```lua
+__serialize(self) -> string | fun(): any
+```
+
+Serialization metamethod; returns a deserializer in the form of `load`-compatible string or a function. The conventient way to transfer data from self to the deserialized object is to save it as an upvalue. Notice: these upvalues should be serializable (even through a custom serializer). Has lower priority than [`ldump.custom_serializers`](#ldumpcustom_serializers)
+
+#### Example
+
+```lua
+local t = setmetatable({
+  creation_time = os.clock(),
+  inner = coroutine.create(function()
+    coroutine.yield(1)
+    coroutine.yield(2)
+  end)
+}, {
+  __serialize = function(self)
+    local creation_time = self.creation_time  -- capturing upvalue
+    return function()
+      return {
+        creation_time = creation_time,
+        inner = coroutine.create(function()
+          coroutine.yield(1)
+          coroutine.yield(2)
+        end)
+      }
+    end
+  end,
+})
+
+local data = ldump(t)
+local t_copy = load(data)()
+```
+
+See as a test at [/tests/test_use_case:65](/tests/test_use_case#L65)
 
 ### ldump.get_warnings
 
@@ -125,6 +183,7 @@ ldump.require_path: string
 `require`-style path to the ldump module, used in deserialization.
 
 Inferred from requiring the ldump itself, can be changed.
+
 
 ## Development
 
