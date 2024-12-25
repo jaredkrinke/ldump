@@ -5,7 +5,7 @@
 Inspired by [`Ser`](https://github.com/gvx/Ser).
 
 | Type                         | Support      |
-| ------------- | ------------ |
+| ---------------------------- | ------------ |
 | nil, boolean, number, string | full         |
 | function                     | full         |
 | userdata                     | user-defined |
