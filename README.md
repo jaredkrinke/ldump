@@ -72,7 +72,7 @@ Copy the [raw contents of init.lua](https://raw.githubusercontent.com/girvel/ldu
 
 ## API
 
-### ldump
+### `ldump`
 
 ```lua
 ldump(value: any) -> string
@@ -80,7 +80,7 @@ ldump(value: any) -> string
 
 Serialize given value to a string, that can be deserialized via `load`
 
-### ldump.custom_serializers
+### `ldump.custom_serializers`
 
 ```lua
 ldump.custom_serializers: table<any, string | fun(): any> = {}
@@ -146,7 +146,7 @@ local t_copy = load(data)()
 
 See as a test at [/tests/test_use_case:65](/tests/test_use_case#L65)
 
-### ldump.get_warnings
+### `ldump.get_warnings`
 
 ```lua
 ldump.get_warnings() -> string[]
@@ -156,7 +156,7 @@ Get the list of warnings from the last ldump call.
 
 See [`ldump.strict_mode`](#ldumpstrict_mode)
 
-### ldump.ignore_upvalue_size
+### `ldump.ignore_upvalue_size`
 
 ```lua
 ldump.ignore_upvalue_size<T: function>(f: T) -> T
@@ -166,7 +166,7 @@ Mark function, causing dump to stop producing upvalue size warnings.
 
 Upvalues can cause large modules to be serialized implicitly. Warnings allow to track that. Returns the same function.
 
-### ldump.strict_mode
+### `ldump.strict_mode`
 
 ```lua
 ldump.strict_mode: boolean = true
@@ -174,7 +174,7 @@ ldump.strict_mode: boolean = true
 
 If true (by default), `ldump` treats unserializable data as an error, if false produces a warning.
 
-### ldump.require_path
+### `ldump.require_path`
 
 ```lua
 ldump.require_path: string
