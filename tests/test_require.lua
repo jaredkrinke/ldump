@@ -12,7 +12,7 @@ it("Basic usage", function()
   assert.are_equal(example_module.coroutine, pass(example_module.coroutine))
 end)
 
-it("Persisting through multiple sessions", function()
+it("Keeping the actual reference through multiple sessions", function()
   local path = "tests.resources.example_module"
   local example_module_1 = ldump.require(path)
   local serialized = ldump(example_module_1)
@@ -26,5 +26,10 @@ it("Persisting through multiple sessions", function()
   assert.are_not_equal(copy_2, example_module_1)
 end)
 
--- TODO serializing/deserializing 2 times
+it("Keeping the actual reference through multiple serializations", function()
+  local example_module = ldump.require("tests.resources.example_module")
+  local copy = pass(pass(example_module))
+  assert.are_equal(example_module, copy)
+end)
+
 -- TODO saving metatables
