@@ -1,3 +1,4 @@
+unpack = unpack or table.unpack
 local warnings, allowed_big_upvalues, stack, build_table, handle_primitive
 
 -- API --
