@@ -32,7 +32,17 @@ it("Keeping the actual reference through multiple serializations", function()
   assert.are_equal(example_module, copy)
 end)
 
--- TODO saving metatables
+it("Allowing `==` validity preservation by marking metatable as static", function()
+  local example_type = ldump.require("tests.resources.example_type")
+  local a = example_type.new(1)
+  local b = example_type.new(1)
+
+  assert.are_equal(a, b)
+  assert.are_equal(a, pass(b))
+  assert.are_equal(pass(a), pass(b))
+end)
+
+-- TODO saving metatables & reference-type keys in upvalues
 
 it("Handling reference-type keys", function()
   local path = "tests.resources.table_keys_invalid"
