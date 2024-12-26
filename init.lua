@@ -360,29 +360,30 @@ validate_keys = function(module, modname, potential_unserializable_keys)
   ):format(unserializable_keys_n, modname, key_paths_rendered), 3)
 end
 
--- TODO! functions here too?
 find_keys = function(root, keys, key_path, result, seen)
-  if type(root) ~= "table" or seen[root] then return end
+  if seen[root] then return end
   seen[root] = true
 
-  for k, v in pairs(root) do
-    if keys[k] then
-      local rendered_path
-      if #key_path == 0 then
-        rendered_path = "."
-      else
-        rendered_path = ""
-        for _, key_in_path in ipairs(key_path) do
-          rendered_path = rendered_path .. "." .. tostring(key_in_path)
-        end
-        rendered_path = rendered_path:sub(2)
+  local root_type = type(root)
+  if root_type == "table" then
+    for k, v in pairs(root) do
+      if keys[k] then
+        table.insert(result, "." .. table.concat(key_path, "."))
       end
-      table.insert(result, rendered_path)
-    end
 
-    table.insert(key_path, k)
-    find_keys(v, keys, key_path, result, seen)
-    table.remove(key_path)
+      table.insert(key_path, tostring(k))
+      find_keys(v, keys, key_path, result, seen)
+      table.remove(key_path)
+    end
+  elseif root_type == "function" then
+    for i = 1, math.huge do
+      local k, v = debug.getupvalue(root, i)
+      if not k then break end
+
+      table.insert(key_path, ("<upvalue %s>"):format(k))
+      find_keys(v, keys, key_path, result, seen)
+      table.remove(key_path)
+    end
   end
 end
 

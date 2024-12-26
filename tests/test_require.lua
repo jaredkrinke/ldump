@@ -64,7 +64,7 @@ it("Handling reference-type keys", function()
 
   local _, j = message:find("\n\nKeys in: ")
   message = message:sub(j + 1)
-  assert.are_equal("., a.b", message)
+  assert.are_equal("., .a.b", message)
 
   ldump.modules_with_reference_keys[path] = true
   package.loaded[path] = nil
@@ -81,6 +81,14 @@ it("Handling wild reference-type keys", function()
   local ok, message = pcall(ldump.require, "tests.resources.table_keys_wild")
   assert.is_false(ok)
 
-  local i = message:find("Keys in: ., thread: 0x[%dabcdef]+, true")
+  local i = message:find("Keys in: ., .thread: 0x[%dabcdef]+, .true")
+  assert.is_true(not not i)
+end)
+
+it("Handling reference-type keys in upvalues", function()
+  local ok, message = pcall(ldump.require, "tests.resources.table_keys_invalid_in_upvalues")
+  assert.is_false(ok)
+
+  local i = message:find("Keys in: .f.<upvalue upvalue>")
   assert.is_true(not not i)
 end)
