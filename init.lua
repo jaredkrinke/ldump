@@ -356,8 +356,8 @@ validate_keys = function(module, modname, potential_unserializable_keys)
     "Encountered reference-type keys (%s) in module %s. Reference-type keys " ..
     "are fundamentally impossible to deserialize using `require`. Save them as a value of " ..
     "the field anywhere in the module, manually overload their serialization or add module " ..
-    "path to `ldump.modules_with_reference_keys` to disable the check.\n\nKeys in:"
-  ):format(unserializable_keys_n, modname), 3)
+    "path to `ldump.modules_with_reference_keys` to disable the check.\n\nKeys in: %s"
+  ):format(unserializable_keys_n, modname, key_paths_rendered), 3)
 end
 
 -- TODO! functions here too?
@@ -367,11 +367,17 @@ find_keys = function(root, keys, key_path, result, seen)
 
   for k, v in pairs(root) do
     if keys[k] then
-      local rendered_path = ""
-      for _, key_in_path in ipairs(key_path) do
-        rendered_path = rendered_path .. "." .. tostring(key_in_path)
+      local rendered_path
+      if #key_path == 0 then
+        rendered_path = "."
+      else
+        rendered_path = ""
+        for _, key_in_path in ipairs(key_path) do
+          rendered_path = rendered_path .. "." .. tostring(key_in_path)
+        end
+        rendered_path = rendered_path:sub(2)
       end
-      table.insert(result, rendered_path:sub(1))
+      table.insert(result, rendered_path)
     end
 
     table.insert(key_path, k)
