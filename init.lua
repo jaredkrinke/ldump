@@ -1,5 +1,6 @@
 unpack = unpack or table.unpack
-local warnings, allowed_big_upvalues, stack, build_table, handle_primitive, mark_as_static
+local warnings, allowed_big_upvalues, stack, build_table, handle_primitive,
+  mark_as_static, find_keys, reset_serializers_recursively
 
 -- API --
 
@@ -23,14 +24,59 @@ ldump.custom_serializers = {}
 --- 
 --- Additionally, marks all data inside to be deserialized by requiring the module.
 --- @param modname string
+--- @return any
 ldump.require = function(modname)
   local is_currently_loaded = package.loaded[modname]
   local result = require(modname)
-  if not is_currently_loaded then
-    mark_as_static(result, modname, {})
+
+  if is_currently_loaded then return result end
+
+  local potential_unserializable_keys = {}
+  mark_as_static(result, modname, {}, potential_unserializable_keys)
+
+  if ldump.modules_with_reference_keys[modname] then return result end
+
+  local unserializable_keys = {}
+  local unserializable_keys_n = 0
+  for key, _ in pairs(potential_unserializable_keys) do
+    if not ldump.custom_serializers[key] then
+      unserializable_keys[key] = true
+      unserializable_keys_n = unserializable_keys_n + 1
+    end
   end
+
+  if unserializable_keys_n > 0 then
+    local key_paths = {}
+    find_keys(result, unserializable_keys, {}, key_paths)
+    local key_paths_rendered = table.concat(key_paths, ", ")
+    if #key_paths_rendered > 1000 then
+      key_paths_rendered = key_paths_rendered:sub(1, 1000) .. "..."
+    end
+
+    error((
+      "Encountered reference-type keys (%s) in module %s. Reference-type keys " ..
+      "are fundamentally impossible to deserialize using `require`. Save them as a value of " ..
+      "the field anywhere in the module, manually overload their serialization or add module " ..
+      "path to `ldump.modules_with_reference_keys` to disable the check.\n\nKeys in:"
+    ):format(unserializable_keys_n, modname), 2)
+  end
+
   return result
 end
+
+--- Disables `ldump.require` erroring on reference-type keys for the module path.
+--- @type table<string, true>
+ldump.modules_with_reference_keys = {}
+
+-- --- Resets `package.loaded` & `ldump.custom_serializers` for the given module.
+-- ---
+-- --- Reseting only the `package.loaded` may cause a memory leak.
+-- --- @param modname string
+-- --- @return any
+-- ldump.reset_require_cache = function(modname)
+--   reset_serializers_recursively(package.loaded[modname])
+--   package.loaded[modname] = nil
+-- end
 
 --- Get the list of warnings from the last ldump call.
 ---
@@ -228,14 +274,13 @@ handle_primitive = function(x, cache)
 end
 
 local reference_types = {
-  string = true,
   ["function"] = true,
   userdata = true,
   thread = true,
   table = true,
 }
 
-mark_as_static = function(value, module_path, key_path)
+mark_as_static = function(value, module_path, key_path, potential_unserializable_keys)
   local value_type = type(value)
   if not reference_types[value_type] then return end
 
@@ -255,11 +300,42 @@ mark_as_static = function(value, module_path, key_path)
   if value_type ~= "table" then return end
 
   for k, v in pairs(value) do
+    if reference_types[type(k)] then
+      potential_unserializable_keys[k] = true
+    end
+
     table.insert(key_path, k)
     mark_as_static(v, module_path, key_path)
     table.remove(key_path)
   end
 end
+
+find_keys = function(root, keys, key_path, result)
+  if type(root) ~= "table" then return end
+
+  for k, v in pairs(root) do
+    if keys[k] then
+      local rendered_path = ""
+      for _, key_in_path in ipairs(key_path) do
+        rendered_path = rendered_path .. "." .. tostring(key_in_path)
+      end
+      table.insert(result, rendered_path:sub(1))
+    end
+
+    table.insert(key_path, k)
+    find_keys(v, keys, key_path, result)
+    table.remove(key_path)
+  end
+end
+
+-- reset_serializers_recursively = function(value)
+--   ldump.custom_serializers[value] = nil
+--   if type(value) ~= "table" then return end
+-- 
+--   for k, v in pairs(value) do
+--     reset_serializers_recursively(v)
+--   end
+-- end
 
 
 return ldump
