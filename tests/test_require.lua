@@ -76,3 +76,11 @@ it("Handling reference-type keys", function()
   local valid_module = ldump.require(path)
   assert.are_equal(valid_module, pass(valid_module))
 end)
+
+it("Handling wild reference-type keys", function()
+  local ok, message = pcall(ldump.require, "tests.resources.table_keys_wild")
+  assert.is_false(ok)
+
+  local i = message:find("Keys in: ., thread: 0x[%dabcdef]+, true")
+  assert.is_true(not not i)
+end)
