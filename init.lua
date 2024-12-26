@@ -1,6 +1,6 @@
 unpack = unpack or table.unpack
 local warnings, allowed_big_upvalues, stack, build_table, handle_primitive,
-  mark_as_static, find_keys, reset_serializers_recursively
+  mark_as_static, validate_keys, reset_serializers_recursively
 
 -- API --
 
@@ -32,34 +32,8 @@ ldump.require = function(modname)
   if is_currently_loaded then return result end
 
   local potential_unserializable_keys = {}
-  mark_as_static(result, modname, {}, potential_unserializable_keys)
-
-  if ldump.modules_with_reference_keys[modname] then return result end
-
-  local unserializable_keys = {}
-  local unserializable_keys_n = 0
-  for key, _ in pairs(potential_unserializable_keys) do
-    if not ldump.custom_serializers[key] then
-      unserializable_keys[key] = true
-      unserializable_keys_n = unserializable_keys_n + 1
-    end
-  end
-
-  if unserializable_keys_n > 0 then
-    local key_paths = {}
-    find_keys(result, unserializable_keys, {}, key_paths)
-    local key_paths_rendered = table.concat(key_paths, ", ")
-    if #key_paths_rendered > 1000 then
-      key_paths_rendered = key_paths_rendered:sub(1, 1000) .. "..."
-    end
-
-    error((
-      "Encountered reference-type keys (%s) in module %s. Reference-type keys " ..
-      "are fundamentally impossible to deserialize using `require`. Save them as a value of " ..
-      "the field anywhere in the module, manually overload their serialization or add module " ..
-      "path to `ldump.modules_with_reference_keys` to disable the check.\n\nKeys in:"
-    ):format(unserializable_keys_n, modname), 2)
-  end
+  mark_as_static(result, modname, {}, potential_unserializable_keys, {})
+  validate_keys(result, modname, potential_unserializable_keys)
 
   return result
 end
@@ -280,38 +254,116 @@ local reference_types = {
   table = true,
 }
 
-mark_as_static = function(value, module_path, key_path, potential_unserializable_keys)
+ldump._upvalue_mt = {
+  __serialize = function(self)
+    local ldump_require_path = ldump.require_path
+    local name = self.name
+    return function()
+      return require(ldump_require_path)._upvalue(name)
+    end
+  end,
+}
+
+ldump._upvalue = function(name)
+  return setmetatable({
+    name = name,
+  }, ldump._upvalue_mt)
+end
+
+mark_as_static = function(value, module_path, key_path, potential_unserializable_keys, seen)
   local value_type = type(value)
-  if not reference_types[value_type] then return end
+  if not reference_types[value_type] or seen[value] then return end
+  -- TODO choose the shortest path?
+  seen[value] = true
 
   do
     local key_path_copy = {unpack(key_path)}
     local ldump_require_path = ldump.require_path
 
     ldump.custom_serializers[value] = function()
-      local result = require(ldump_require_path).require(module_path)
+      local ldump_local = require(ldump_require_path)
+      local result = ldump_local.require(module_path)
       for _, key in ipairs(key_path_copy) do
-        result = result[key]
+        if getmetatable(key) == ldump_local._upvalue_mt then
+          assert(type(result) == "function")
+
+          for i = 1, math.huge do
+            local k, v = debug.getupvalue(result, i)
+            assert(k)
+
+            if k == key.name then
+              result = v
+              break
+            end
+          end
+        else
+          result = result[key]
+        end
       end
       return result
     end
   end
 
-  if value_type ~= "table" then return end
+  if value_type == "table" then
+    for k, v in pairs(value) do
+      if reference_types[type(k)] then
+        potential_unserializable_keys[k] = true
+      end
 
-  for k, v in pairs(value) do
-    if reference_types[type(k)] then
-      potential_unserializable_keys[k] = true
+      table.insert(key_path, k)
+      mark_as_static(v, module_path, key_path, potential_unserializable_keys, seen)
+      table.remove(key_path)
     end
+  elseif value_type == "function" then
+    for i = 1, math.huge do
+      local k, v = debug.getupvalue(value, i)
+      if not k then break end
+      if k == "_ENV" then goto continue end
 
-    table.insert(key_path, k)
-    mark_as_static(v, module_path, key_path)
-    table.remove(key_path)
+      table.insert(key_path, ldump._upvalue(k))
+      mark_as_static(v, module_path, key_path, potential_unserializable_keys, seen)
+      table.remove(key_path)
+
+      ::continue::
+    end
   end
 end
 
-find_keys = function(root, keys, key_path, result)
-  if type(root) ~= "table" then return end
+local find_keys
+
+validate_keys = function(module, modname, potential_unserializable_keys)
+  if ldump.modules_with_reference_keys[modname] then return end
+
+  local unserializable_keys = {}
+  local unserializable_keys_n = 0
+  for key, _ in pairs(potential_unserializable_keys) do
+    if not ldump.custom_serializers[key] then
+      unserializable_keys[key] = true
+      unserializable_keys_n = unserializable_keys_n + 1
+    end
+  end
+
+  if unserializable_keys_n == 0 then return end
+
+  local key_paths = {}
+  find_keys(module, unserializable_keys, {}, key_paths, {})
+  local key_paths_rendered = table.concat(key_paths, ", ")
+  if #key_paths_rendered > 1000 then
+    key_paths_rendered = key_paths_rendered:sub(1, 1000) .. "..."
+  end
+
+  error((
+    "Encountered reference-type keys (%s) in module %s. Reference-type keys " ..
+    "are fundamentally impossible to deserialize using `require`. Save them as a value of " ..
+    "the field anywhere in the module, manually overload their serialization or add module " ..
+    "path to `ldump.modules_with_reference_keys` to disable the check.\n\nKeys in:"
+  ):format(unserializable_keys_n, modname), 3)
+end
+
+-- TODO! functions here too?
+find_keys = function(root, keys, key_path, result, seen)
+  if type(root) ~= "table" or seen[root] then return end
+  seen[root] = true
 
   for k, v in pairs(root) do
     if keys[k] then
@@ -323,7 +375,7 @@ find_keys = function(root, keys, key_path, result)
     end
 
     table.insert(key_path, k)
-    find_keys(v, keys, key_path, result)
+    find_keys(v, keys, key_path, result, seen)
     table.remove(key_path)
   end
 end
