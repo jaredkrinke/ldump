@@ -276,14 +276,13 @@ ldump._upvalue = function(name)
 end
 
 local mark_as_static = function(value, module_path, key_path)
-  local key_path_copy = {unpack(key_path)}
   local ldump_require_path = ldump.require_path
 
   ldump.custom_serializers[value] = function()
     local ldump_local = require(ldump_require_path)
     local result = ldump_local.require(module_path)
 
-    for _, key in ipairs(key_path_copy) do
+    for _, key in ipairs(key_path) do
       if getmetatable(key) == ldump_local._upvalue_mt then
         for i = 1, math.huge do
           local k, v = debug.getupvalue(result, i)
@@ -306,13 +305,15 @@ mark_as_static_recursively = function(value, module_path, potential_unserializab
   if not reference_types[type(value)] then return end
 
   local seen = {[value] = true}
-  local queue = {{{}, value}}
+  local queue_values = {value}
+  local queue_key_paths = {{}}
   local i = 0
   -- TODO! handle unserializable keys here, as it is a non-recursive function
 
-  while i < #queue do
+  while i < #queue_values do
     i = i + 1
-    local key_path, current = unpack(queue[i])
+    local current = queue_values[i]
+    local key_path = queue_key_paths[i]
 
     mark_as_static(current, module_path, key_path)
 
@@ -327,11 +328,10 @@ mark_as_static_recursively = function(value, module_path, potential_unserializab
         if not reference_types[type(v)] or seen[v] then goto continue end
 
         seen[v] = true
-        -- TODO! refactor algorithm to prevent allocation here...
         local key_path_copy = {unpack(key_path)}
         table.insert(key_path_copy, k)
-        -- TODO! ...and here...
-        table.insert(queue, {key_path_copy, v})
+        table.insert(queue_values, v)
+        table.insert(queue_key_paths, key_path_copy)
 
         ::continue::
       end
@@ -345,11 +345,10 @@ mark_as_static_recursively = function(value, module_path, potential_unserializab
         if not reference_types[type(v)] or seen[v] then goto continue end
 
         seen[v] = true
-        --- TODO! ...and here...
         local key_path_copy = {unpack(key_path)}
         table.insert(key_path_copy, ldump._upvalue(k))
-        -- TODO! ...and here
-        table.insert(queue, {key_path_copy, v})
+        table.insert(queue_values, v)
+        table.insert(queue_key_paths, key_path_copy)
 
         ::continue::
       end
