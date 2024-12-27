@@ -92,3 +92,8 @@ it("Handling reference-type keys in upvalues", function()
   local i = message:find("Keys in: .f.<upvalue upvalue>")
   assert.is_true(not not i)
 end)
+
+it("Handling looped tables", function()
+  local t = ldump.require("tests.resources.table_keys_recursion")
+  assert.are_equal(t, pass(t))
+end)
