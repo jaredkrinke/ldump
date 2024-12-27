@@ -40,15 +40,16 @@ end
 --- @type table<string, true>
 ldump.modules_with_reference_keys = {}
 
--- --- Resets `package.loaded` & `ldump.custom_serializers` for the given module.
--- ---
--- --- Reseting only the `package.loaded` may cause a memory leak.
--- --- @param modname string
--- --- @return any
--- ldump.reset_require_cache = function(modname)
---   reset_serializers_recursively(package.loaded[modname])
---   package.loaded[modname] = nil
--- end
+--- Resets `package.loaded` & `ldump.custom_serializers` for the given module.
+---
+--- Helpful for resetting after `ldump.require`-ing a module. Reseting only the `package.loaded`
+--- may cause a memory leak.
+--- @param modname string
+--- @return any
+ldump.reset_require_cache = function(modname)
+  reset_serializers_recursively(package.loaded[modname])
+  package.loaded[modname] = nil
+end
 
 --- Get the list of warnings from the last ldump call.
 ---
@@ -164,6 +165,7 @@ local build_function = function(x, cache)
     local upvalue
     if k == "_ENV" then
       upvalue = "_ENV"
+      -- TODO! would this work if this would be a different env? an upvalue called _ENV?
     else
       upvalue = handle_primitive(v, cache)
     end
@@ -286,6 +288,7 @@ local mark_as_static = function(value, module_path, key_path)
           local k, v = debug.getupvalue(result, i)
           assert(k)
 
+          -- TODO does this handle _ENV correctly? upvalue called _ENV?
           if k == key.name then
             result = v
             break
@@ -340,6 +343,9 @@ mark_as_static_recursively = function(value, modname)
       for j = 1, math.huge do
         local k, v = debug.getupvalue(current, j)
         if not k then break end
+
+        -- TODO can just be a normal upvalue, can't be detected by == _ENV because can have
+        --   different environment
         if k == "_ENV" then goto continue end
 
         -- duplicated for optimization
@@ -408,6 +414,8 @@ find_keys = function(root, keys, key_path, result, seen)
       local k, v = debug.getupvalue(root, i)
       if not k then break end
 
+      -- TODO handle _ENV
+
       table.insert(key_path, ("<upvalue %s>"):format(k))
       find_keys(v, keys, key_path, result, seen)
       table.remove(key_path)
@@ -415,14 +423,27 @@ find_keys = function(root, keys, key_path, result, seen)
   end
 end
 
--- reset_serializers_recursively = function(value)
---   ldump.custom_serializers[value] = nil
---   if type(value) ~= "table" then return end
--- 
---   for k, v in pairs(value) do
---     reset_serializers_recursively(v)
---   end
--- end
+reset_serializers_recursively = function(value)
+  ldump.custom_serializers[value] = nil
+
+  local type_value = type(value)
+  if type_value == "table" then
+    for _, v in pairs(value) do
+      reset_serializers_recursively(v)
+    end
+  elseif type_value == "function" then
+    for i = 1, math.huge do
+      local k, v = debug.getupvalue(value, i)
+      if not k then break end
+      if k == "_ENV" then goto continue end
+      -- TODO handle _ENV better
+
+      reset_serializers_recursively(v)
+
+      ::continue::
+    end
+  end
+end
 
 
 return ldump

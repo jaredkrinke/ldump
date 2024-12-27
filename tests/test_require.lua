@@ -104,3 +104,17 @@ it("Using breadth-first search to minimize paths", function()
   module[3] = nil
   assert.are_equal(module[2].t, pass(module[2].t))
 end)
+
+it("Interacting with ldump.reset_require_cache", function()
+  local path = "tests.resources.simple_module"
+  local module = ldump.require(path)
+
+  assert.are_equal(module, pass(module))
+  assert.are_equal(module.b, pass(module.b))
+
+  ldump.reset_require_cache(path)
+
+  assert.are_not_equal(module, pass(module))
+  assert.are_not_equal(module.b, pass(module.b))
+  assert.are_same(module, pass(module))
+end)

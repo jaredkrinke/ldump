@@ -125,6 +125,8 @@ See as a test at [/tests/test_use_case.lua:97](/tests/test_use_case.lua#L97)
 __serialize(self) -> string | fun(): any
 ```
 
+[comment]: # (TODO Define `load`-compatible string better)
+
 Serialization metamethod; returns a deserializer in the form of `load`-compatible string or a function. The conventient way to transfer data from self to the deserialized object is to save it as an upvalue. Notice: these upvalues should be serializable (even through a custom serializer). Has lower priority than [`ldump.custom_serializers`](#ldumpcustom_serializers)
 
 #### Example
