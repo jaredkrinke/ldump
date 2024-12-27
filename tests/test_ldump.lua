@@ -209,7 +209,7 @@ describe("Complex cases:", function()
   it("shared upvalue", function()
     local create_property
     create_property = function()
-      local val = {0}
+      local val = 0
       local get = function() return val end
       local set = function(v) val = v end
       return setmetatable({get = get, set = set}, {
