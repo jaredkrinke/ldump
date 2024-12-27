@@ -99,5 +99,8 @@ it("Handling looped tables", function()
 end)
 
 it("Using breadth-first search to minimize paths", function()
-  
+  local module = ldump.require("tests.resources.breadth_first")
+  module[1] = nil
+  module[3] = nil
+  assert.are_equal(module[2].t, pass(module[2].t))
 end)

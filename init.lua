@@ -278,7 +278,6 @@ end
 mark_as_static = function(value, module_path, key_path, potential_unserializable_keys, seen)
   local value_type = type(value)
   if not reference_types[value_type] or seen[value] then return end
-  -- TODO choose the shortest path?
   seen[value] = true
 
   do
@@ -288,10 +287,9 @@ mark_as_static = function(value, module_path, key_path, potential_unserializable
     ldump.custom_serializers[value] = function()
       local ldump_local = require(ldump_require_path)
       local result = ldump_local.require(module_path)
+
       for _, key in ipairs(key_path_copy) do
         if getmetatable(key) == ldump_local._upvalue_mt then
-          assert(type(result) == "function")
-
           for i = 1, math.huge do
             local k, v = debug.getupvalue(result, i)
             assert(k)
