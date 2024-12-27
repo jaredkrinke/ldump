@@ -94,6 +94,10 @@ it("Handling reference-type keys in upvalues", function()
 end)
 
 it("Handling looped tables", function()
-  local t = ldump.require("tests.resources.table_keys_recursion")
+  local t = ldump.require("tests.resources.table_recursive")
   assert.are_equal(t, pass(t))
+end)
+
+it("Using breadth-first search to minimize paths", function()
+  
 end)
