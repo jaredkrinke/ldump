@@ -1,6 +1,6 @@
 unpack = unpack or table.unpack
 local warnings, allowed_big_upvalues, stack, build_table, handle_primitive,
-  mark_as_static_recursively, validate_keys, reset_serializers_recursively
+  mark_as_static_recursively, reset_serializers_recursively
 
 -- API --
 
@@ -29,11 +29,9 @@ ldump.require = function(modname)
   local is_currently_loaded = package.loaded[modname]
   local result = require(modname)
 
-  if is_currently_loaded then return result end
-
-  local potential_unserializable_keys = {}
-  mark_as_static_recursively(result, modname, potential_unserializable_keys)
-  validate_keys(result, modname, potential_unserializable_keys)
+  if not is_currently_loaded then
+    mark_as_static_recursively(result, modname)
+  end
 
   return result
 end
@@ -301,21 +299,24 @@ local mark_as_static = function(value, module_path, key_path)
   end
 end
 
-mark_as_static_recursively = function(value, module_path, potential_unserializable_keys)
+local find_keys, validate_keys
+
+mark_as_static_recursively = function(value, modname)
   if not reference_types[type(value)] then return end
 
   local seen = {[value] = true}
   local queue_values = {value}
   local queue_key_paths = {{}}
+  local potential_unserializable_keys = {}
+
   local i = 0
-  -- TODO! handle unserializable keys here, as it is a non-recursive function
 
   while i < #queue_values do
     i = i + 1
     local current = queue_values[i]
     local key_path = queue_key_paths[i]
 
-    mark_as_static(current, module_path, key_path)
+    mark_as_static(current, modname, key_path)
 
     local type_current = type(current)
     if type_current == "table" then
@@ -355,37 +356,8 @@ mark_as_static_recursively = function(value, module_path, potential_unserializab
     end
   end
 
-  -- local value_type = type(value)
-  -- if not reference_types[value_type] or seen[value] then return end
-  -- seen[value] = true
-
-
-  -- if value_type == "table" then
-  --   for k, v in pairs(value) do
-  --     if reference_types[type(k)] then
-  --       potential_unserializable_keys[k] = true
-  --     end
-
-  --     table.insert(key_path, k)
-  --     mark_as_static(v, module_path, key_path, potential_unserializable_keys, seen)
-  --     table.remove(key_path)
-  --   end
-  -- elseif value_type == "function" then
-  --   for i = 1, math.huge do
-  --     local k, v = debug.getupvalue(value, i)
-  --     if not k then break end
-  --     if k == "_ENV" then goto continue end
-
-  --     table.insert(key_path, ldump._upvalue(k))
-  --     mark_as_static(v, module_path, key_path, potential_unserializable_keys, seen)
-  --     table.remove(key_path)
-
-  --     ::continue::
-  --   end
-  -- end
+  validate_keys(value, modname, potential_unserializable_keys)
 end
-
-local find_keys
 
 validate_keys = function(module, modname, potential_unserializable_keys)
   if ldump.modules_with_reference_keys[modname] then return end
