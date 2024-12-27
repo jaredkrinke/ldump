@@ -80,6 +80,9 @@ ldump.strict_mode = true
 --- @type string
 ldump.require_path = select(1, ...)
 
+
+-- internal implementation --
+
 ldump_mt.__call = function(self, x)
   assert(
     self.require_path,
@@ -89,13 +92,15 @@ ldump_mt.__call = function(self, x)
   stack = {}
   warnings = {}
   local cache = {size = 0}
-  local result = "return " .. handle_primitive(x, cache)
+  local ok, result = pcall(handle_primitive, x, cache)
 
-  return ("local cache = {}\nlocal ldump = require(\"%s\")\n"):format(self.require_path) .. result
+  if not ok then
+    error(result, 2)
+  end
+
+  return ("local cache = {}\nlocal ldump = require(\"%s\")\nreturn %s")
+    :format(self.require_path, result)
 end
-
-
--- internal implementation --
 
 allowed_big_upvalues = {}
 
@@ -143,7 +148,7 @@ local build_function = function(x, cache)
     error((
       "Function %s is not `string.dump`-compatible; if it uses coroutines, use " ..
       "`ldump.custom_serializers`"
-    ):format(table.concat(stack, ".")))
+    ):format(table.concat(stack, ".")), 0)
   end
 
   result[1] = "local _ = " .. ([[load(%q)]]):format(res)
@@ -215,10 +220,10 @@ handle_primitive = function(x, cache)
 
       local which_serializer = ldump.custom_serializers[x]
         and "ldump.custom_serializers[x]"
-        or "getmetatable(x).__serialize"
+        or "getmetatable(x).__serialize(x)"
 
-      error(("%s returned type %s for %s; serializers should return string or function")
-        :format(which_serializer, deserializer_type, table.concat(stack, ".")))
+      error(("`%s` returned type %s for .%s; it should return string or function")
+        :format(which_serializer, deserializer_type, table.concat(stack, ".")), 0)
     end
   end
 
@@ -230,7 +235,7 @@ handle_primitive = function(x, cache)
     ):format(xtype, table.concat(stack, "."))
 
     if ldump.strict_mode then
-      error(message)
+      error(message, 0)
     end
 
     table.insert(warnings, message)
