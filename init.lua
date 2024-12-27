@@ -1,6 +1,6 @@
 unpack = unpack or table.unpack
 local warnings, allowed_big_upvalues, stack, build_table, handle_primitive,
-  mark_as_static, validate_keys, reset_serializers_recursively
+  mark_as_static_recursively, validate_keys, reset_serializers_recursively
 
 -- API --
 
@@ -32,7 +32,7 @@ ldump.require = function(modname)
   if is_currently_loaded then return result end
 
   local potential_unserializable_keys = {}
-  mark_as_static(result, modname, {}, potential_unserializable_keys, {})
+  mark_as_static_recursively(result, modname, potential_unserializable_keys)
   validate_keys(result, modname, potential_unserializable_keys)
 
   return result
@@ -275,61 +275,115 @@ ldump._upvalue = function(name)
   }, ldump._upvalue_mt)
 end
 
-mark_as_static = function(value, module_path, key_path, potential_unserializable_keys, seen)
-  local value_type = type(value)
-  if not reference_types[value_type] or seen[value] then return end
-  seen[value] = true
+local mark_as_static = function(value, module_path, key_path)
+  local key_path_copy = {unpack(key_path)}
+  local ldump_require_path = ldump.require_path
 
-  do
-    local key_path_copy = {unpack(key_path)}
-    local ldump_require_path = ldump.require_path
+  ldump.custom_serializers[value] = function()
+    local ldump_local = require(ldump_require_path)
+    local result = ldump_local.require(module_path)
 
-    ldump.custom_serializers[value] = function()
-      local ldump_local = require(ldump_require_path)
-      local result = ldump_local.require(module_path)
+    for _, key in ipairs(key_path_copy) do
+      if getmetatable(key) == ldump_local._upvalue_mt then
+        for i = 1, math.huge do
+          local k, v = debug.getupvalue(result, i)
+          assert(k)
 
-      for _, key in ipairs(key_path_copy) do
-        if getmetatable(key) == ldump_local._upvalue_mt then
-          for i = 1, math.huge do
-            local k, v = debug.getupvalue(result, i)
-            assert(k)
-
-            if k == key.name then
-              result = v
-              break
-            end
+          if k == key.name then
+            result = v
+            break
           end
-        else
-          result = result[key]
         end
+      else
+        result = result[key]
       end
-      return result
+    end
+    return result
+  end
+end
+
+mark_as_static_recursively = function(value, module_path, potential_unserializable_keys)
+  if not reference_types[type(value)] then return end
+
+  local seen = {[value] = true}
+  local queue = {{{}, value}}
+  local i = 0
+  -- TODO! handle unserializable keys here, as it is a non-recursive function
+
+  while i < #queue do
+    i = i + 1
+    local key_path, current = unpack(queue[i])
+
+    mark_as_static(current, module_path, key_path)
+
+    local type_current = type(current)
+    if type_current == "table" then
+      for k, v in pairs(current) do
+        if reference_types[type(k)] then
+          potential_unserializable_keys[k] = true
+        end
+
+        -- duplicated for optimization
+        if not reference_types[type(v)] or seen[v] then goto continue end
+
+        seen[v] = true
+        -- TODO! refactor algorithm to prevent allocation here...
+        local key_path_copy = {unpack(key_path)}
+        table.insert(key_path_copy, k)
+        -- TODO! ...and here...
+        table.insert(queue, {key_path_copy, v})
+
+        ::continue::
+      end
+    elseif type_current == "function" then
+      for j = 1, math.huge do
+        local k, v = debug.getupvalue(current, j)
+        if not k then break end
+        if k == "_ENV" then goto continue end
+
+        -- duplicated for optimization
+        if not reference_types[type(v)] or seen[v] then goto continue end
+
+        seen[v] = true
+        --- TODO! ...and here...
+        local key_path_copy = {unpack(key_path)}
+        table.insert(key_path_copy, ldump._upvalue(k))
+        -- TODO! ...and here
+        table.insert(queue, {key_path_copy, v})
+
+        ::continue::
+      end
     end
   end
 
-  if value_type == "table" then
-    for k, v in pairs(value) do
-      if reference_types[type(k)] then
-        potential_unserializable_keys[k] = true
-      end
+  -- local value_type = type(value)
+  -- if not reference_types[value_type] or seen[value] then return end
+  -- seen[value] = true
 
-      table.insert(key_path, k)
-      mark_as_static(v, module_path, key_path, potential_unserializable_keys, seen)
-      table.remove(key_path)
-    end
-  elseif value_type == "function" then
-    for i = 1, math.huge do
-      local k, v = debug.getupvalue(value, i)
-      if not k then break end
-      if k == "_ENV" then goto continue end
 
-      table.insert(key_path, ldump._upvalue(k))
-      mark_as_static(v, module_path, key_path, potential_unserializable_keys, seen)
-      table.remove(key_path)
+  -- if value_type == "table" then
+  --   for k, v in pairs(value) do
+  --     if reference_types[type(k)] then
+  --       potential_unserializable_keys[k] = true
+  --     end
 
-      ::continue::
-    end
-  end
+  --     table.insert(key_path, k)
+  --     mark_as_static(v, module_path, key_path, potential_unserializable_keys, seen)
+  --     table.remove(key_path)
+  --   end
+  -- elseif value_type == "function" then
+  --   for i = 1, math.huge do
+  --     local k, v = debug.getupvalue(value, i)
+  --     if not k then break end
+  --     if k == "_ENV" then goto continue end
+
+  --     table.insert(key_path, ldump._upvalue(k))
+  --     mark_as_static(v, module_path, key_path, potential_unserializable_keys, seen)
+  --     table.remove(key_path)
+
+  --     ::continue::
+  --   end
+  -- end
 end
 
 local find_keys
