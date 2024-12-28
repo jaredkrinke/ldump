@@ -1,4 +1,3 @@
-unpack = unpack or table.unpack
 local warnings, allowed_big_upvalues, stack, build_table, handle_primitive,
   mark_as_static_recursively, reset_serializers_recursively
 
@@ -81,6 +80,9 @@ ldump.require_path = select(1, ...)
 
 
 -- internal implementation --
+
+-- NOTICE: lua5.1-compatible; does not support goto
+unpack = unpack or table.unpack
 
 ldump_mt.__call = function(self, x)
   assert(
@@ -329,15 +331,13 @@ mark_as_static_recursively = function(value, modname)
         end
 
         -- duplicated for optimization
-        if not reference_types[type(v)] or seen[v] then goto continue end
-
-        seen[v] = true
-        local key_path_copy = {unpack(key_path)}
-        table.insert(key_path_copy, k)
-        table.insert(queue_values, v)
-        table.insert(queue_key_paths, key_path_copy)
-
-        ::continue::
+        if reference_types[type(v)] and not seen[v] then
+          seen[v] = true
+          local key_path_copy = {unpack(key_path)}
+          table.insert(key_path_copy, k)
+          table.insert(queue_values, v)
+          table.insert(queue_key_paths, key_path_copy)
+        end
       end
     elseif type_current == "function" then
       for j = 1, math.huge do
@@ -346,18 +346,14 @@ mark_as_static_recursively = function(value, modname)
 
         -- TODO can just be a normal upvalue, can't be detected by == _ENV because can have
         --   different environment
-        if k == "_ENV" then goto continue end
-
         -- duplicated for optimization
-        if not reference_types[type(v)] or seen[v] then goto continue end
-
-        seen[v] = true
-        local key_path_copy = {unpack(key_path)}
-        table.insert(key_path_copy, ldump._upvalue(k))
-        table.insert(queue_values, v)
-        table.insert(queue_key_paths, key_path_copy)
-
-        ::continue::
+        if k ~= "_ENV" and reference_types[type(v)] and not seen[v] then
+          seen[v] = true
+          local key_path_copy = {unpack(key_path)}
+          table.insert(key_path_copy, k)
+          table.insert(queue_values, v)
+          table.insert(queue_key_paths, key_path_copy)
+        end
       end
     end
   end
@@ -435,12 +431,11 @@ reset_serializers_recursively = function(value)
     for i = 1, math.huge do
       local k, v = debug.getupvalue(value, i)
       if not k then break end
-      if k == "_ENV" then goto continue end
+
       -- TODO handle _ENV better
-
-      reset_serializers_recursively(v)
-
-      ::continue::
+      if k ~= "_ENV" then
+        reset_serializers_recursively(v)
+      end
     end
   end
 end
