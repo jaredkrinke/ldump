@@ -81,8 +81,14 @@ it("Handling wild reference-type keys", function()
   local ok, message = pcall(ldump.require, "tests.resources.table_keys_wild")
   assert.is_false(ok)
 
-  local i = message:find("Keys in: ., .thread: 0x[%dabcdef]+, .true")
-  assert.is_true(not not i)
+  do
+    local _, j = message:find("Keys in: ")
+    message = message:sub(j + 1) .. ", "
+  end
+
+  assert.is_true(not not message:find("%., "))
+  assert.is_true(not not message:find(".thread: 0x[%dabcdef]+, "))
+  assert.is_true(not not message:find(".true, "))
 end)
 
 it("Handling reference-type keys in upvalues", function()
