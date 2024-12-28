@@ -6,16 +6,13 @@ jobs:
       fail-fast: false
       matrix:
         luaVersion: ["5.4", "5.3", "5.2", "5.1", "luajit-openresty"]
-        osVersion: ["ubuntu-22.04", "windows-2022"]
 
-    runs-on: ${{ matrix.osVersion }}
+    # would not test on windows, the leafo-gh-actions-lua bugs out even with presetup
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Checkout
       uses: actions/checkout@v3
-
-    - name: Presetup if windows
-      uses: ilammy/msvc-dev-cmd@v1
 
     - name: Setup Lua
       uses: leafo/gh-actions-lua@v10
