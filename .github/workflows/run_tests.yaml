@@ -15,6 +15,7 @@ jobs:
       uses: leafo/gh-actions-lua@v10
       with:
         luaVersion: ${{ matrix.luaVersion }}
+        buildCache: false
     - name: Setup Luarocks
       uses: leafo/gh-actions-luarocks@v4
     - name: Setup busted
