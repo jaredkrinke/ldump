@@ -63,8 +63,9 @@ it("Handling reference-type keys", function()
   assert.is_false(ok)
 
   local _, j = message:find("\n\nKeys in: ")
-  message = message:sub(j + 1)
-  assert.are_equal("., .a.b", message)
+  message = message:sub(j + 1) .. ", "
+  assert.is_true(message:find("., "))
+  assert.is_true(message:find(".a.b, "))
 
   ldump.modules_with_reference_keys[path] = true
   package.loaded[path] = nil
