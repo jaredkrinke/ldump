@@ -83,6 +83,9 @@ ldump.require_path = select(1, ...)
 
 -- NOTICE: lua5.1-compatible; does not support goto
 unpack = unpack or table.unpack
+if _VERSION == "Lua 5.1" then
+  load = loadstring
+end
 
 ldump_mt.__call = function(self, x)
   assert(
