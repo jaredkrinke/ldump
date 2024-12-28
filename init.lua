@@ -350,7 +350,7 @@ mark_as_static_recursively = function(value, modname)
         if k ~= "_ENV" and reference_types[type(v)] and not seen[v] then
           seen[v] = true
           local key_path_copy = {unpack(key_path)}
-          table.insert(key_path_copy, k)
+          table.insert(key_path_copy, ldump._upvalue(k))
           table.insert(queue_values, v)
           table.insert(queue_key_paths, key_path_copy)
         end
