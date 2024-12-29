@@ -205,19 +205,57 @@ describe("Error handling:", function()
   end)
 end)
 
-it("handles _ENV upvalue correctly", function()
-  local f
-  do
-    local _ENV = {a = 1}
-    --- @diagnostic disable-next-line:undefined-global
-    f = function() return _ENV, a end
-  end
+describe("Corner cases:", function()
+  it("shared upvalue", function()
+    local create_property
+    create_property = function()
+      local val = 0
+      local get = function() return val end
+      local set = function(v) val = v end
+      return setmetatable({get = get, set = set}, {
+        __serialize = function(self)
+          return create_property
+        end,
+      })
+    end
 
-  local g = pass(f)
+    local elem = load(ldump(create_property()))()
+    elem.set(5)
+    assert.are_equal(5, elem.get())
+    elem.set(7)
+    assert.are_equal(7, elem.get())
+  end)
 
-  local env, value = f()
-  local copy_env, copy_value = g()
+  it("shared reference type upvalue", function()
+    local create_property
+    create_property = function()
+      local val = {0}
+      local get = function() return val[1] end
+      local set = function(v) val[1] = v end
+      return {get = get, set = set}
+    end
 
-  assert.are_same(env, copy_env)
-  assert.are_equal(value, copy_value)
+    local elem = load(ldump(create_property()))()
+    elem.set(5)
+    assert.are_equal(5, elem.get())
+    elem.set(7)
+    assert.are_equal(7, elem.get())
+  end)
+
+  it("handles _ENV upvalue correctly", function()
+    local f
+    do
+      local _ENV = {a = 1}
+      --- @diagnostic disable-next-line:undefined-global
+      f = function() return _ENV, a end
+    end
+
+    local g = pass(f)
+
+    local env, value = f()
+    local copy_env, copy_value = g()
+
+    assert.are_same(env, copy_env)
+    assert.are_equal(value, copy_value)
+  end)
 end)
