@@ -169,7 +169,7 @@ local build_function = function(x, cache)
     table.insert(stack, ("<upvalue %s>"):format(k))
     local upvalue
     -- for some reason, may be that v ~= _ENV, but v._G == _ENV
-    if k == "_ENV" and (_ENV == nil or v._G == _ENV) then
+    if k == "_ENV" and _ENV ~= nil and v._G == _G then
       upvalue = "_ENV"
     else
       upvalue = handle_primitive(v, cache)
