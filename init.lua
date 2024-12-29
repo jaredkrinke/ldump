@@ -168,9 +168,9 @@ local build_function = function(x, cache)
 
     table.insert(stack, ("<upvalue %s>"):format(k))
     local upvalue
-    if k == "_ENV" then
+    -- for some reason, may be that v ~= _ENV, but v._G == _ENV
+    if k == "_ENV" and (_ENV == nil or v._G == _ENV) then
       upvalue = "_ENV"
-      -- TODO! would this work if this would be a different env? an upvalue called _ENV?
     else
       upvalue = handle_primitive(v, cache)
     end
@@ -293,7 +293,6 @@ local mark_as_static = function(value, module_path, key_path)
           local k, v = debug.getupvalue(result, i)
           assert(k)
 
-          -- TODO does this handle _ENV correctly? upvalue called _ENV?
           if k == key.name then
             result = v
             break
@@ -347,9 +346,8 @@ mark_as_static_recursively = function(value, modname)
         local k, v = debug.getupvalue(current, j)
         if not k then break end
 
-        -- TODO can just be a normal upvalue, can't be detected by == _ENV because can have
-        --   different environment
         -- duplicated for optimization
+        -- seems like any _ENV would be handled by string.dump
         if k ~= "_ENV" and reference_types[type(v)] and not seen[v] then
           seen[v] = true
           local key_path_copy = {unpack(key_path)}
@@ -413,7 +411,7 @@ find_keys = function(root, keys, key_path, result, seen)
       local k, v = debug.getupvalue(root, i)
       if not k then break end
 
-      -- TODO handle _ENV
+      -- TODO prevent going into _ENV if it is not overloaded
 
       table.insert(key_path, ("<upvalue %s>"):format(k))
       find_keys(v, keys, key_path, result, seen)
@@ -435,7 +433,6 @@ reset_serializers_recursively = function(value)
       local k, v = debug.getupvalue(value, i)
       if not k then break end
 
-      -- TODO handle _ENV better
       if k ~= "_ENV" then
         reset_serializers_recursively(v)
       end
