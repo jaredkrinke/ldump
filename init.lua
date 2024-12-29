@@ -11,12 +11,27 @@ local ldump = setmetatable({}, ldump_mt)
 
 --- @alias deserializer string | fun(): any
 
---- Custom serialization functions for the exact objects. 
----
---- Key is the value that can be serialized, value is a deserializer in form of `load`-compatible
---- string or function. Takes priority over `__serialize`.
---- @type table<any, deserializer>
-ldump.custom_serializers = {}
+ldump.serializer = setmetatable({
+  --- Custom serialization functions for the exact objects. 
+  ---
+  --- Key is the value that can be serialized, value is a deserializer in form of `load`-compatible
+  --- string or function. Takes priority over `__serialize`.
+  --- @type table<any, deserializer>
+  handlers = {},
+}, {
+  __call = function(self, x)
+    local handler = self.handlers[x]
+    if handler then
+      return handler, "ldump.serializer.handlers"
+    end
+
+    local mt = getmetatable(x)
+    handler = mt and mt.__serialize and mt.__serialize(x)
+    if handler then
+      return handler, "getmetatable(x).__serialize(x)"
+    end
+  end,
+})
 
 --- Get the list of warnings from the last ldump call.
 ---
@@ -194,8 +209,7 @@ local primitives = {
 
 handle_primitive = function(x, cache, upvalue_id_cache)
   do  -- handle custom serializers
-    local mt = getmetatable(x)
-    local deserializer = ldump.custom_serializers[x] or mt and mt.__serialize and mt.__serialize(x)
+    local deserializer, source = ldump.serializer(x)
 
     if deserializer then
       local deserializer_type = type(deserializer)
@@ -209,12 +223,8 @@ handle_primitive = function(x, cache, upvalue_id_cache)
         return ("%s()"):format(handle_primitive(deserializer, cache, upvalue_id_cache))
       end
 
-      local which_serializer = ldump.custom_serializers[x]
-        and "ldump.custom_serializers[x]"
-        or "getmetatable(x).__serialize(x)"
-
       error(("`%s` returned type %s for .%s; it should return string or function")
-        :format(which_serializer, deserializer_type, table.concat(stack, ".")), 0)
+        :format(source or "ldump.serializer", deserializer_type, table.concat(stack, ".")), 0)
     end
   end
 

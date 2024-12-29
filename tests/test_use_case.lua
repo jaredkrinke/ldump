@@ -46,7 +46,7 @@ it("Serializing any lua data", function()
   end
 
   game_state.coroutine = create_coroutine()
-  ldump.custom_serializers[game_state.coroutine] = create_coroutine
+  ldump.serializer.handlers[game_state.coroutine] = create_coroutine
 
   -- act
   local serialized_data = ldump(game_state)
@@ -105,7 +105,7 @@ it("Using custom_serializers for serialization override", function()
   end
 
   local c = create_coroutine()
-  ldump.custom_serializers[c] = create_coroutine
+  ldump.serializer.handlers[c] = create_coroutine
   local data = ldump(c)
   local c_copy = load(data)()
 
