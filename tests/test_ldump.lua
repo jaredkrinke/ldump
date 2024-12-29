@@ -214,7 +214,7 @@ describe("Error handling:", function()
 
     local ok, result = pcall(ldump --[[ @as function ]], t)
 
-    assert.is_false(ok, result)
+    assert.is_false(ok)
   end)
 
   describe("unsupported type", function()
