@@ -125,3 +125,20 @@ it("Interacting with ldump.reset_require_cache", function()
   assert.are_not_equal(module.b, pass(module.b))
   assert.are_same(module, pass(module))
 end)
+
+it("Handling _ENV upvalue", function()
+  local f = ldump.require("tests.resources.function_with_env_upvalue")
+  local g = pass(f)
+
+  local original_upvalue, original_env_access_result = f()
+  local passed_upvalue, passed_env_access_result = g()
+
+  assert.are_equal(original_upvalue, passed_upvalue)
+  if _VERSION == "Lua 5.1" then
+    assert(original_env_access_result == nil)
+    assert.are_equal(nil, passed_env_access_result)
+  else
+    assert(original_env_access_result == 1)
+    assert.are_equal(1, passed_env_access_result)
+  end
+end)
