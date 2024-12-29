@@ -233,3 +233,14 @@ describe("Error handling:", function()
     end)
   end)
 end)
+
+it("handles _ENV upvalue correctly", function()
+  local f = require("tests.resources.function_with_env_upvalue")
+  local g = pass(f)
+
+  local env, value = f()
+  local copy_env, copy_value = g()
+
+  assert.are_same(env, copy_env)
+  assert.are_equal(value, copy_value)
+end)
