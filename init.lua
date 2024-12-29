@@ -13,6 +13,12 @@ local ldump = setmetatable({}, ldump_mt)
 
 -- no fun overload, lua ls bugs out here
 
+--- Function, encapsulating custom serialization logic.
+---
+--- Defined by default to work with `__serialize` and `.handlers`, can be reassigned. Accepts the
+--- serialized value, returns a deserializer in the form of a string with a valid lua expression, a
+--- function or nil if the value should be serialized normally. Also may return a second optional
+--- result -- a string to be displayed in the error message.
 ldump.serializer = setmetatable({
   --- Custom serialization functions for the exact objects. 
   ---
