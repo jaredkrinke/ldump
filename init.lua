@@ -118,7 +118,7 @@ local build_function = function(x, cache)
 
   if not ok then
     error((
-      "Function %s is not `string.dump`-compatible; if it uses coroutines, use " ..
+      "Function .%s is not `string.dump`-compatible; if it uses coroutines, use " ..
       "`ldump.custom_serializers`"
     ):format(table.concat(stack, ".")), 0)
   end
@@ -206,7 +206,7 @@ handle_primitive = function(x, cache)
   local xtype = type(x)
   if not primitives[xtype] then
     local message = (
-      "ldump does not support serializing type %q of %s; use `__serialize` metamethod or " ..
+      "ldump does not support serializing type %q of .%s; use `__serialize` metamethod or " ..
       "`ldump.custom_serializers` to define serialization"
     ):format(xtype, table.concat(stack, "."))
 
