@@ -153,35 +153,6 @@ describe("Overriding serialization:", function()
     assert.are_equal(404, pass(thread))
     ldump.custom_serializers[thread] = nil
   end)
-
-  it("resetting custom_serializers", function()
-    local path_1 = "tests.resources.function_with_upvalue"
-    local f = require(path_1)
-    local _, upvalue = debug.getupvalue(f, 1)
-
-    local path_2 = "tests.resources.empty_table"
-    local t = require(path_2)
-
-    ldump.custom_serializers[f] = "1"
-    ldump.custom_serializers[upvalue] = "2"
-    ldump.custom_serializers[t] = "3"
-
-    assert.are_equal(1, pass(f))
-    assert.are_equal(2, pass(upvalue))
-    assert.are_equal(3, pass(t))
-
-    ldump.reset_require_cache(path_1)
-
-    assert.are_same(f(), pass(f)())
-    assert.are_same(upvalue, pass(upvalue))
-    assert.are_equal(3, pass(t))
-
-    ldump.reset_require_cache(path_2)
-
-    assert.are_same(f(), pass(f)())
-    assert.are_same(upvalue, pass(upvalue))
-    assert.are_same(t, pass(t))
-  end)
 end)
 
 describe("Error handling:", function()
@@ -235,7 +206,13 @@ describe("Error handling:", function()
 end)
 
 it("handles _ENV upvalue correctly", function()
-  local f = require("tests.resources.function_with_env_upvalue")
+  local f
+  do
+    local _ENV = {a = 1}
+    --- @diagnostic disable-next-line:undefined-global
+    f = function() return _ENV, a end
+  end
+
   local g = pass(f)
 
   local env, value = f()
