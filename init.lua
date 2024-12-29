@@ -11,6 +11,8 @@ local ldump = setmetatable({}, ldump_mt)
 
 --- @alias deserializer string | fun(): any
 
+-- no fun overload, lua ls bugs out here
+
 ldump.serializer = setmetatable({
   --- Custom serialization functions for the exact objects. 
   ---
@@ -22,13 +24,13 @@ ldump.serializer = setmetatable({
   __call = function(self, x)
     local handler = self.handlers[x]
     if handler then
-      return handler, "ldump.serializer.handlers"
+      return handler, "`ldump.serializer.handlers`"
     end
 
     local mt = getmetatable(x)
     handler = mt and mt.__serialize and mt.__serialize(x)
     if handler then
-      return handler, "getmetatable(x).__serialize(x)"
+      return handler, "`getmetatable(x).__serialize(x)`"
     end
   end,
 })
@@ -223,7 +225,7 @@ handle_primitive = function(x, cache, upvalue_id_cache)
         return ("%s()"):format(handle_primitive(deserializer, cache, upvalue_id_cache))
       end
 
-      error(("`%s` returned type %s for .%s; it should return string or function")
+      error(("%s returned type %s for .%s; it should return string or function")
         :format(source or "ldump.serializer", deserializer_type, table.concat(stack, ".")), 0)
     end
   end

@@ -137,14 +137,14 @@ describe("Overriding serialization:", function()
     assert.are_equal(1, pass(t))
   end)
 
-  it("custom serializer", function()
+  it("custom serializer handlers", function()
     local t = {value = 1}
     ldump.serializer.handlers[t] = "1"
     assert.are_equal(1, pass(t))
     ldump.serializer.handlers[t] = nil
   end)
 
-  it("custom serializer -- threads", function()
+  it("custom serializer handlers -- threads", function()
     local thread = coroutine.create(function()
       coroutine.yield()
       return 1
@@ -152,6 +152,39 @@ describe("Overriding serialization:", function()
     ldump.serializer.handlers[thread] = "404"
     assert.are_equal(404, pass(thread))
     ldump.serializer.handlers[thread] = nil
+  end)
+
+  it("custom serializer", function()
+    -- make an independent ldump copy for mutation
+    local ldump_copy = package.loaded.init
+    package.loaded.init = nil
+    ldump = require("init")
+
+    local pass = function(x)
+      return load(ldump_copy(x))()
+    end
+
+    ldump_copy.serializer = function(x)
+      if type(x) == "thread" then
+        return "404", "serializer's thread handling"
+      end
+
+      if type(x) == "function" then
+        return 0, "serializer's table handling"
+      end
+    end
+
+    local thread = coroutine.create(function() end)
+    local t = {a = 1, b = 2, c = coroutine.create(function() end)}
+    local f = function() end
+
+    assert.are_equal(404, pass(thread))
+    assert.are_same({a = 1, b = 2, c = 404}, pass(t))
+
+    local ok, res = pcall(ldump_copy, f)
+    assert.is_false(ok)
+    local ending = "serializer's table handling"
+    assert.are_equal(ending, res:sub(1, #ending))
   end)
 end)
 
