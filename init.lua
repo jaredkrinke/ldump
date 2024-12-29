@@ -414,11 +414,12 @@ find_keys = function(root, keys, key_path, result, seen)
       local k, v = debug.getupvalue(root, i)
       if not k then break end
 
-      -- TODO prevent going into _ENV if it is not overloaded
-
-      table.insert(key_path, ("<upvalue %s>"):format(k))
-      find_keys(v, keys, key_path, result, seen)
-      table.remove(key_path)
+      -- prevent searching the global table
+      if k ~= "_ENV" or _ENV == nil or v._G == _G then
+        table.insert(key_path, ("<upvalue %s>"):format(k))
+        find_keys(v, keys, key_path, result, seen)
+        table.remove(key_path)
+      end
     end
   end
 end
