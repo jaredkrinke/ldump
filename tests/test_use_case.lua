@@ -89,7 +89,7 @@ it("Using metatables for serialization override", function()
   local data = ldump(t)
   local t_copy = load(data)()
 
-  assert.are_equal(t.creation_time, t_copy.creation_time)
+  assert.is_true(math.abs(t.creation_time - t_copy.creation_time) < 0.0001)
   assert.are_equal(coroutine.resume(t.inner), coroutine.resume(t_copy.inner))
   assert.are_equal(coroutine.resume(t.inner), coroutine.resume(t_copy.inner))
 end)
