@@ -212,11 +212,17 @@ describe("Corner cases:", function()
       local val = 0
       local get = function() return val end
       local set = function(v) val = v end
-      return setmetatable({get = get, set = set}, {
-        __serialize = function(self)
-          return create_property
-        end,
-      })
+      local result = {get = get, set = set}
+
+      if not debug.upvaluejoin then  -- needed in Lua 5.1
+        setmetatable(result, {
+          __serialize = function(self)
+            return create_property
+          end,
+        })
+      end
+
+      return result
     end
 
     local elem = load(ldump(create_property()))()

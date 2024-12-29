@@ -1,4 +1,4 @@
-local warnings, allowed_big_upvalues, stack, build_table, handle_primitive
+local warnings, allowed_big_upvalues, stack, handle_primitive
 
 -- API --
 
@@ -63,8 +63,7 @@ ldump_mt.__call = function(self, x)
 
   stack = {}
   warnings = {}
-  local cache = {size = 0}
-  local ok, result = pcall(handle_primitive, x, cache)
+  local ok, result = pcall(handle_primitive, x, {size = 0}, {})
 
   if not ok then
     error(result, 2)
@@ -80,7 +79,7 @@ local to_expression = function(statement)
   return ("(function()\n%s\nend)()"):format(statement)
 end
 
-build_table = function(x, cache)
+local build_table = function(x, cache, upvalue_id_cache)
   local mt = getmetatable(x)
 
   cache.size = cache.size + 1
@@ -93,8 +92,8 @@ build_table = function(x, cache)
   for k, v in pairs(x) do
     table.insert(stack, tostring(k))
     table.insert(result, ("_[%s] = %s"):format(
-      handle_primitive(k, cache),
-      handle_primitive(v, cache)
+      handle_primitive(k, cache, upvalue_id_cache),
+      handle_primitive(v, cache, upvalue_id_cache)
     ))
     table.remove(stack)
   end
@@ -102,15 +101,17 @@ build_table = function(x, cache)
   if not mt then
     table.insert(result, "return _")
   else
-    table.insert(result, ("return setmetatable(_, %s)"):format(handle_primitive(mt, cache)))
+    table.insert(result, ("return setmetatable(_, %s)")
+      :format(handle_primitive(mt, cache, upvalue_id_cache)))
   end
 
   return table.concat(result, "\n")
 end
 
-local build_function = function(x, cache)
+local build_function = function(x, cache, upvalue_id_cache)
   cache.size = cache.size + 1
-  cache[x] = cache.size
+  local x_cache_i = cache.size
+  cache[x] = x_cache_i
 
   local result = {}
 
@@ -124,7 +125,7 @@ local build_function = function(x, cache)
   end
 
   result[1] = "local _ = " .. ([[load(%q)]]):format(res)
-  result[2] = ("cache[%s] = _"):format(cache.size)
+  result[2] = ("cache[%s] = _"):format(x_cache_i)
 
   if allowed_big_upvalues[x] then
     result[3] = "ldump.ignore_upvalue_size(_)"
@@ -143,14 +144,28 @@ local build_function = function(x, cache)
     then
       upvalue = "_ENV"
     else
-      upvalue = handle_primitive(v, cache)
+      upvalue = handle_primitive(v, cache, upvalue_id_cache)
     end
     table.remove(stack)
 
-    if not allowed_big_upvalues[x] and #upvalue > 2048 then
+    if not allowed_big_upvalues[x] and #upvalue > 2048 and k ~= "_ENV" then
       table.insert(warnings, ("Big upvalue %s in %s"):format(k, table.concat(stack, ".")))
     end
     table.insert(result, ("debug.setupvalue(_, %s, %s)"):format(i, upvalue))
+
+    if debug.upvalueid then
+      local id = debug.upvalueid(x, i)
+      local pair = upvalue_id_cache[id]
+      if pair then
+        local f_i, upvalue_i = unpack(pair)
+        table.insert(
+          result,
+          ("debug.upvaluejoin(_, %s, cache[%s], %s)"):format(i, f_i, upvalue_i)
+        )
+      else
+        upvalue_id_cache[id] = {x_cache_i, i}
+      end
+    end
   end
   table.insert(result, "return _")
   return table.concat(result, "\n")
@@ -163,11 +178,11 @@ local primitives = {
   string = function(x)
     return string.format("%q", x)
   end,
-  ["function"] = function(x, cache)
-    return to_expression(build_function(x, cache))
+  ["function"] = function(x, cache, upvalue_id_cache)
+    return to_expression(build_function(x, cache, upvalue_id_cache))
   end,
-  table = function(x, cache)
-    return to_expression(build_table(x, cache))
+  table = function(x, cache, upvalue_id_cache)
+    return to_expression(build_table(x, cache, upvalue_id_cache))
   end,
   ["nil"] = function()
     return "nil"
@@ -177,7 +192,7 @@ local primitives = {
   end,
 }
 
-handle_primitive = function(x, cache)
+handle_primitive = function(x, cache, upvalue_id_cache)
   do  -- handle custom serializers
     local mt = getmetatable(x)
     local deserializer = ldump.custom_serializers[x] or mt and mt.__serialize and mt.__serialize(x)
@@ -191,7 +206,7 @@ handle_primitive = function(x, cache)
 
       if deserializer_type == "function" then
         allowed_big_upvalues[deserializer] = true
-        return ("%s()"):format(handle_primitive(deserializer, cache))
+        return ("%s()"):format(handle_primitive(deserializer, cache, upvalue_id_cache))
       end
 
       local which_serializer = ldump.custom_serializers[x]
@@ -225,7 +240,7 @@ handle_primitive = function(x, cache)
     end
   end
 
-  return primitives[xtype](x, cache)
+  return primitives[xtype](x, cache, upvalue_id_cache)
 end
 
 
