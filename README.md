@@ -25,8 +25,8 @@ local world = {
   get_answer = function() return upvalue end,
 }
 
-local serialized_data = ldump(world)
-local loaded_world = load(serialized_data)()
+local serialized_data = ldump(world)  -- serialize to a string
+local loaded_world = load(serialized_data)()  -- deserialize the string
 ```
 
 See as a test at [/tests/test_use_case.lua:3](/tests/test_use_case.lua#L3)
@@ -60,12 +60,12 @@ local create_coroutine = function()
   end)
 end
 
+-- override serialization
 game_state.coroutine = create_coroutine()
-ldump.custom_serializers[game_state.coroutine] = create_coroutine
+ldump.serializer.handlers[game_state.coroutine] = create_coroutine
 
--- act
-local serialized_data = ldump(game_state)
-local loaded_game_state = load(serialized_data)()
+local serialized_data = ldump(game_state)  -- serialize
+local loaded_game_state = load(serialized_data)()  -- deserialize
 ```
 
 See as a test at [/tests/test_use_case.lua:19](/tests/test_use_case.lua#L19)
@@ -94,6 +94,8 @@ Serialize given value to a string, that can be deserialized via `load`
 #### Example
 
 ```lua
+local ldump = require("ldump")
+
 local t = setmetatable({
   creation_time = os.clock(),
   inner = coroutine.create(function()

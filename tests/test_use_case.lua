@@ -12,8 +12,8 @@ it("Basic use case", function()
     get_answer = function() return upvalue end,
   }
 
-  local serialized_data = ldump(world)
-  local loaded_world = load(serialized_data)()
+  local serialized_data = ldump(world)  -- serialize to a string
+  local loaded_world = load(serialized_data)()  -- deserialize the string
 
   assert.are_equal(world.name, loaded_world.name)
   assert.are_equal(world.get_answer(), loaded_world.get_answer())
@@ -45,12 +45,12 @@ it("Serializing any lua data", function()
     end)
   end
 
+  -- override serialization
   game_state.coroutine = create_coroutine()
   ldump.serializer.handlers[game_state.coroutine] = create_coroutine
 
-  -- act
-  local serialized_data = ldump(game_state)
-  local loaded_game_state = load(serialized_data)()
+  local serialized_data = ldump(game_state)  -- serialize
+  local loaded_game_state = load(serialized_data)()  -- deserialize
 
   -- assert
   assert.are_equal(game_state.get_answer(), loaded_game_state.get_answer())
