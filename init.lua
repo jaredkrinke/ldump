@@ -59,7 +59,7 @@ ldump.ignore_upvalue_size = function(f)
 end
 
 --- If true (by default), `ldump` treats unserializable data as an error, if false produces a
---- warning.
+--- warning and replaces data with nil.
 --- @type boolean
 ldump.strict_mode = true
 

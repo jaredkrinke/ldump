@@ -91,44 +91,6 @@ ldump(value: any) -> string
 
 Serialize given value to a string, that can be deserialized via `load`
 
-### `ldump.custom_serializers`
-
-```lua
-ldump.custom_serializers: table<any, string | fun(): any> = {}
-```
-
-Custom serialization functions for the exact objects.
-
-Key is the value that can be serialized, value is a deserializer in form of `load`-compatible string or function. Takes priority over [`__serialize`](#__serialize).
-
-#### Example
-
-```lua
-local create_coroutine = function()
-  return coroutine.create(function()
-    coroutine.yield(1)
-    coroutine.yield(2)
-  end)
-end
-
-local c = create_coroutine()
-ldump.custom_serializers[c] = create_coroutine
-local data = ldump(c)
-local c_copy = load(data)()
-```
-
-See as a test at [/tests/test_use_case.lua:97](/tests/test_use_case.lua#L97)
-
-### `__serialize`
-
-```lua
-__serialize(self) -> string | fun(): any
-```
-
-[comment]: # (TODO Define `load`-compatible string better)
-
-Serialization metamethod; returns a deserializer in the form of `load`-compatible string or a function. The conventient way to transfer data from self to the deserialized object is to save it as an upvalue. Notice: these upvalues should be serializable (even through a custom serializer). Has lower priority than [`ldump.custom_serializers`](#ldumpcustom_serializers)
-
 #### Example
 
 ```lua
@@ -159,6 +121,26 @@ local t_copy = load(data)()
 
 See as a test at [/tests/test_use_case:65](/tests/test_use_case#L65)
 
+### `ldump.serializer`
+
+```lua
+ldump.serializer(x: any) -> (string | fun(): any)?, string?
+```
+
+Function, encapsulating custom serialization logic.
+
+Defined by default to work with `__serialize` and `.handlers`, can be reassigned. Accepts the serialized value, returns a deserializer in the form of a string with a valid lua expression, a function or nil if the value should be serialized normally. Also may return a second optional result -- a string to be displayed in the error message.
+
+### `ldump.serializer.handlers`
+
+```lua
+ldump.serializer.handlers: table<any, string | fun(): any>
+```
+
+Custom serialization functions for the exact objects. 
+
+Key is the value that can be serialized, value is a deserializer in form of a string with a valid lua expression or a function. Takes priority over `__serialize`.
+
 ### `ldump.get_warnings`
 
 ```lua
@@ -185,7 +167,7 @@ Upvalues can cause large modules to be serialized implicitly. Warnings allow to 
 ldump.strict_mode: boolean = true
 ```
 
-If true (by default), `ldump` treats unserializable data as an error, if false produces a warning.
+If true (by default), `ldump` treats unserializable data as an error, if false produces a warning and replaces data with nil.
 
 ### `ldump.require_path`
 
