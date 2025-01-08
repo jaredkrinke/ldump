@@ -6,14 +6,14 @@
 
 Inspired by [`Ser`](https://github.com/gvx/Ser). Supports Lua 5.1, 5.2, 5.3, 5.4 and LuaJIT. Tested for edge cases, such as joined upvalues and _ENV redefinition. Fully annotated in compatibility with LuaLS.
 
-| Type                                   | Support      |
-| -------------------------------------- | ------------ |
-| nil, boolean, number, string           | full         |
-| function                               | full         |
-| userdata                               | user-defined |
-| thread                                 | user-defined |
-| table                                  | full         |
-| metatables[*](/docs/development#plans) | full         |
+| Type                                      | Support      |
+| ----------------------------------------- | ------------ |
+| nil, boolean, number, string              | full         |
+| function                                  | full         |
+| userdata                                  | user-defined |
+| thread                                    | user-defined |
+| table                                     | full         |
+| metatables[*](/docs/development.md#plans) | full         |
 
 
 ## TL;DR show me the code
