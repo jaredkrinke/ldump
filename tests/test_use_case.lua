@@ -100,7 +100,7 @@ describe("docs/api.md", function()
     assert.are_equal(coroutine.resume(t.inner), coroutine.resume(t_copy.inner))
   end)
 
-  it("Using custom_serializers for serialization override", function()
+  it("Using serializer.handlers for serialization override", function()
     local ldump = require("init")
 
     local create_coroutine = function()

@@ -143,7 +143,7 @@ local build_function = function(x, cache, upvalue_id_cache)
   if not ok then
     error((
       "Function .%s is not `string.dump`-compatible; if it uses coroutines, use " ..
-      "`ldump.custom_serializers`"
+      "`ldump.serializer.handlers`"
     ):format(table.concat(stack, ".")), 0)
   end
 
@@ -216,7 +216,7 @@ local primitives = {
 }
 
 handle_primitive = function(x, cache, upvalue_id_cache)
-  do  -- handle custom serializers
+  do  -- handle custom serialization
     local deserializer, source = ldump.serializer(x)
 
     if deserializer then
@@ -240,7 +240,7 @@ handle_primitive = function(x, cache, upvalue_id_cache)
   if not primitives[xtype] then
     local message = (
       "ldump does not support serializing type %q of .%s; use `__serialize` metamethod or " ..
-      "`ldump.custom_serializers` to define serialization"
+      "`ldump.serializer.handlers` to define serialization"
     ):format(xtype, table.concat(stack, "."))
 
     if ldump.strict_mode then
