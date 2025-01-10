@@ -31,7 +31,7 @@ local serialized_data = ldump(world)  -- serialize to a string
 local loaded_world = load(serialized_data)()  -- deserialize the string
 ```
 
-See as a test at [/tests/test_use_case.lua:3](/tests/test_use_case.lua#L3)
+See as a test at [/tests/test_use_case.lua:7](/tests/test_use_case.lua#L7)
 
 
 ## The full power of ldump
@@ -70,7 +70,7 @@ local serialized_data = ldump(game_state)  -- serialize
 local loaded_game_state = load(serialized_data)()  -- deserialize
 ```
 
-See as a test at [/tests/test_use_case.lua:19](/tests/test_use_case.lua#L19)
+See as a test at [/tests/test_use_case.lua:23](/tests/test_use_case.lua#L23)
 
 
 ## Installation

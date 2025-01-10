@@ -8,6 +8,8 @@ ldump(value: any) -> string
 
 Serialize given value to a string, that can be deserialized via `load`
 
+TODO another, simpler example
+
 ### Example
 
 ```lua
@@ -38,7 +40,7 @@ local data = ldump(t)
 local t_copy = load(data)()
 ```
 
-See as a test at [/tests/test_use_case:65](/tests/test_use_case#L65)
+See as a test at [/tests/test_use_case:71](/tests/test_use_case#L71)
 
 ## `ldump.serializer`
 
