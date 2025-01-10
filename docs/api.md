@@ -8,7 +8,20 @@ ldump(value: any) -> string
 
 Serialize given value to a string, that can be deserialized via `load`
 
-TODO another, simpler example
+### Example
+
+```lua
+local upvalue = 42
+local world = {
+  name = "New world",
+  get_answer = function() return upvalue end,
+}
+
+local serialized_data = ldump(world)  -- serialize to a string
+local loaded_world = load(serialized_data)()  -- deserialize the string
+```
+
+See as a test at [/tests/test_use_case:12](/tests/test_use_case#L12)
 
 ### Example
 
