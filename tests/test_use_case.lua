@@ -92,8 +92,8 @@ describe("docs/api.md", function()
       end,
     })
 
-    local data = ldump(t)
-    local t_copy = load(data)()
+    local serialized_data = ldump(t)
+    local t_copy = load(serialized_data)()
 
     assert.is_true(math.abs(t.creation_time - t_copy.creation_time) < 0.0001)
     assert.are_equal(coroutine.resume(t.inner), coroutine.resume(t_copy.inner))
@@ -112,8 +112,8 @@ describe("docs/api.md", function()
 
     local c = create_coroutine()
     ldump.serializer.handlers[c] = create_coroutine
-    local data = ldump(c)  -- TODO data is a bad naming
-    local c_copy = load(data)()
+    local serialized_data = ldump(c)
+    local c_copy = load(serialized_data)()
 
     assert.are_equal(coroutine.resume(c), coroutine.resume(c_copy))
     assert.are_equal(coroutine.resume(c), coroutine.resume(c_copy))

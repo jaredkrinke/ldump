@@ -36,8 +36,8 @@ local t = setmetatable({
   end,
 })
 
-local data = ldump(t)
-local t_copy = load(data)()
+local serialized_data = ldump(t)
+local t_copy = load(serialized_data)()
 ```
 
 See as a test at [/tests/test_use_case:71](/tests/test_use_case#L71)
