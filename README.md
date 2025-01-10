@@ -75,7 +75,7 @@ See as a test at [/tests/test_use_case.lua:23](/tests/test_use_case.lua#L23)
 
 ## Installation
 
-Copy the [raw contents of init.lua from the latest release](https://raw.githubusercontent.com/girvel/ldump/refs/tags/v1.1.0/init.lua) into your `lib/ldump.lua` or `git clone -b v1.1.0 https://github.com/girvel/ldump` inside the `lib/` — you still would be able to do `require("ldump")`.
+Copy the [raw contents of init.lua from the latest release](https://raw.githubusercontent.com/girvel/ldump/refs/tags/v1.2.0/init.lua) into your `lib/ldump.lua` or `git clone -b v1.2.0 https://github.com/girvel/ldump` inside the `lib/` — you still would be able to do `require("ldump")`.
 
 ## Credits
 
