@@ -59,7 +59,7 @@ Custom serializers can be defined in two ways: through `__serialize` metamethod 
 
 ### `__serialize`
 
-Allows to redefine serialization for all values with given metatable. The serialize metamethod should accept one argument — the object itself — and return the deserializer. See examples in [Method](#0method).
+Allows to redefine serialization for all values with given metatable. The serialize metamethod should accept one argument — the object itself — and return the deserializer. See examples in [Method](#0-method).
 
 ### `ldump.serializer.handlers`
 
