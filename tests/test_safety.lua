@@ -1,5 +1,3 @@
-if loadstring then return end  -- ignores lua5.1
-
 local ldump = require("init")
 
 it("Attempt at isolation of `load`", function()
@@ -7,10 +5,20 @@ it("Attempt at isolation of `load`", function()
     print(123)
   end
 
-  local safe_env = 
-
+  local safe_env = ldump.get_safe_env()
   local serialized = ldump(to_serialize)
-  local deserialized = load(serialized, nil, nil, safe_env)()
+
+  local deserialized
+  if loadstring then
+    local f = function()
+      deserialized = loadstring(serialized)()
+    end
+    setfenv(f, safe_env)
+    f()
+  else
+    deserialized = load(serialized, nil, nil, safe_env)()
+  end
+
   local ok = pcall(deserialized)
   assert.is_false(ok)
 end)
