@@ -41,6 +41,23 @@ ldump.serializer = setmetatable({
   end,
 })
 
+--- Get environment for safe `load`ing.
+---
+--- Intended to be passed as `env` argument (or used in setfenv in Lua 5.1) when `load`ing
+--- untrusted data to prevent malicious code execution. Contains only functions, required by ldump
+--- itself -- if serialization is overriden, may need to be updated with environment used there.
+ldump.get_safe_env = function()
+  return {
+    require = require,
+    load = load,
+    debug = {
+      setupvalue = debug.setupvalue,
+      upvaluejoin = debug.upvaluejoin,
+    },
+    setmetatable = setmetatable,
+  }
+end
+
 --- Get the list of warnings from the last ldump call.
 ---
 --- See `ldump.strict_mode`.

@@ -75,6 +75,16 @@ Custom serialization functions for the exact objects.
 
 Key is the value that can be serialized, value is a deserializer in form of a string with a valid lua expression or a function. Takes priority over `__serialize`.
 
+## `ldump.get_safe_env`
+
+```lua
+ldump.get_safe_env() -> table
+```
+
+Get environment for safe `load`ing.
+
+Intended to be passed as `env` argument (or used in setfenv in Lua 5.1) when `load`ing untrusted data to prevent malicious code execution. Contains only functions, required by ldump itself -- if serialization is overriden, may need to be updated with environment used there.
+
 ## `ldump.get_warnings`
 
 ```lua

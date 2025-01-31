@@ -7,15 +7,7 @@ it("Attempt at isolation of `load`", function()
     print(123)
   end
 
-  local safe_env = {
-    require = require,
-    load = load,
-    debug = {
-      setupvalue = debug.setupvalue,
-      upvaluejoin = debug.upvaluejoin,
-    },
-    setmetatable = setmetatable,
-  }
+  local safe_env = 
 
   local serialized = ldump(to_serialize)
   local deserialized = load(serialized, nil, nil, safe_env)()
