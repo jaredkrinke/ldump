@@ -50,6 +50,7 @@ ldump.get_safe_env = function()
   return {
     require = require,
     load = load,
+    loadstring = loadstring,
     debug = {
       setupvalue = debug.setupvalue,
       upvaluejoin = debug.upvaluejoin,

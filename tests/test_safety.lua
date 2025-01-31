@@ -9,7 +9,7 @@ it("Attempt at isolation of `load`", function()
   local serialized = ldump(to_serialize)
 
   local deserialized
-  if loadstring then
+  if _VERSION == "Lua 5.1" then
     local f = function()
       deserialized = loadstring(serialized)()
     end
