@@ -31,6 +31,9 @@ local world = {
 
 local serialized_data = ldump(world)  -- serialize to a string
 local loaded_world = load(serialized_data)()  -- deserialize the string
+
+assert.are_equal(world.name, loaded_world.name)
+assert.are_equal(world.get_answer(), loaded_world.get_answer())
 ```
 
 See as a test at [/tests/test_use_case.lua:7](/tests/test_use_case.lua#L7)
@@ -70,6 +73,18 @@ ldump.serializer.handlers[game_state.coroutine] = create_coroutine
 
 local serialized_data = ldump(game_state)  -- serialize
 local loaded_game_state = load(serialized_data)()  -- deserialize
+
+-- assert
+assert.are_equal(game_state.get_answer(), loaded_game_state.get_answer())
+assert.are_equal(game_state.coroutine(), loaded_game_state.coroutine())
+assert.are_equal(game_state.coroutine(), loaded_game_state.coroutine())
+
+assert.are_same(game_state.player, loaded_game_state.player)
+assert.are_same(game_state.boss, loaded_game_state.boss)
+assert.are_same(
+  game_state.deleted_entities[game_state.boss],
+  loaded_game_state.deleted_entities[loaded_game_state.boss]
+)
 ```
 
 See as a test at [/tests/test_use_case.lua:23](/tests/test_use_case.lua#L23)
