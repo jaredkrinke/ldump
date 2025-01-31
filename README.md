@@ -6,6 +6,8 @@
 
 Inspired by [`Ser`](https://github.com/gvx/Ser). Supports Lua 5.1, 5.2, 5.3, 5.4 and LuaJIT. Tested for edge cases, such as joined upvalues and _ENV redefinition. Fully annotated in compatibility with LuaLS.
 
+**WARNING:** `ldump`'s deserialization function is Lua's builtin `load`, which can load malicious code. Treat serialized data as arbitrary Lua code (which it is), [`.safe_load` is coming soon](https://github.com/girvel/ldump/issues/42).
+
 | Type                                      | Support      |
 | ----------------------------------------- | ------------ |
 | nil, boolean, number, string              | full         |
