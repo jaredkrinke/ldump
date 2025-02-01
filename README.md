@@ -92,7 +92,8 @@ See as a test at [/tests/test_use_case.lua:23](/tests/test_use_case.lua#L23)
 
 ## Installation
 
-Copy the [raw contents of init.lua from the latest release](https://raw.githubusercontent.com/girvel/ldump/refs/tags/v1.3.0/init.lua) into your `lib/ldump.lua` or `git clone -b v1.3.0 https://github.com/girvel/ldump` inside the `lib/` — you still would be able to do `require("ldump")`.
+- *Traditional way:* copy the [raw contents of init.lua from the latest release](https://raw.githubusercontent.com/girvel/ldump/refs/tags/v1.3.0/init.lua) into your `<lib>/ldump.lua`
+- *Recommended way:* `git clone -b v1.3.0 https://github.com/girvel/ldump` inside the `<lib>/` — you still would be able to do `require("ldump")`, but it would allow version management through git
 
 ---
 
