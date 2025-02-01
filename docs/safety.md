@@ -1,6 +1,6 @@
 # Safety
 
-`ldump` is intended for serialization of all Lua types, including functions and metatables -- which is inherently unsafe. If the data is untrusted, there are two sources of danger:
+`ldump` is intended for serialization of all Lua types, including functions and metatables -- which are inherently unsafe. In untrusted data, there are two sources of danger:
 
 1. `load(data)()` itself may run malicious code
 2. Any manipulation with resulting data may run malicious code -- even indexing, assigning or using any operator -- due to metamethods
