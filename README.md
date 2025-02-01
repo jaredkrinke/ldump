@@ -1,4 +1,4 @@
-[API](/docs/api.md) | [Overloading serialization](/docs/overloading.md) | [Development](/docs/development.md)
+[API](/docs/api.md) | [Overloading serialization](/docs/overloading.md) | [Safety](/docs/safety.md) | [Development](/docs/development.md)
 
 # ldump — serializer for any lua type
 
@@ -6,7 +6,7 @@
 
 Inspired by [`Ser`](https://github.com/gvx/Ser). Supports Lua 5.1, 5.2, 5.3, 5.4 and LuaJIT. Tested for edge cases, such as joined upvalues and _ENV redefinition. Fully annotated in compatibility with LuaLS.
 
-**WARNING:** `ldump`'s deserialization function is Lua's builtin `load`, which can load malicious code. Treat serialized data as arbitrary Lua code (which it is), [`.safe_load` is coming soon](https://github.com/girvel/ldump/issues/42).
+**WARNING:** `ldump`'s deserialization function is Lua's builtin `load`, which can load malicious code. Consider using JSON for untrusted data or use [safety measures](/docs/safety.md).
 
 | Type                                      | Support      |
 | ----------------------------------------- | ------------ |
@@ -92,9 +92,13 @@ See as a test at [/tests/test_use_case.lua:23](/tests/test_use_case.lua#L23)
 
 ## Installation
 
-Copy the [raw contents of init.lua from the latest release](https://raw.githubusercontent.com/girvel/ldump/refs/tags/v1.2.0/init.lua) into your `lib/ldump.lua` or `git clone -b v1.2.0 https://github.com/girvel/ldump` inside the `lib/` — you still would be able to do `require("ldump")`.
+Copy the [raw contents of init.lua from the latest release](https://raw.githubusercontent.com/girvel/ldump/refs/tags/v1.3.0/init.lua) into your `lib/ldump.lua` or `git clone -b v1.3.0 https://github.com/girvel/ldump` inside the `lib/` — you still would be able to do `require("ldump")`.
+
+---
 
 ## Credits
 
 - [paulstelian97](https://www.reddit.com/user/paulstelian97/) for providing a joined upvalue test case
 - [lambda_abstraction](https://www.reddit.com/user/lambda_abstraction/) for suggesting a way to join upvalues
+- [jhatemyjob](https://news.ycombinator.com/user?id=jhatemyjob) for special characters test case
+- [lifthrasiir](https://news.ycombinator.com/user?id=lifthrasiir) for pointing out safety issues

@@ -1,6 +1,18 @@
 local ldump = require("init")
--- ldump.require_path = "ldump"
 _G.unpack = table.unpack
+
+if os.getenv("LDUMP_TEST_SAFETY") then
+  local old_load
+  if loadstring and type(jit) ~= "table" then
+    old_load = loadstring
+  else
+    old_load = load
+  end
+
+  _G.load = function(x)
+    return old_load(x, nil, nil, ldump.get_safe_env())
+  end
+end
 
 --- Serialize and deserialize
 local pass = function(value)
@@ -26,6 +38,7 @@ describe("Serializing primitives:", function()
 
   it("string", function()
     persists("abc\n")
+    persists("\a\b\f\n\r\t\v\\\"\'")
   end)
 
   it("function", function()

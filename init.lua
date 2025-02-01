@@ -41,6 +41,23 @@ ldump.serializer = setmetatable({
   end,
 })
 
+--- Get environment for safe `load`ing.
+---
+--- Intended to be passed as `env` argument when `load`ing untrusted data to prevent malicious code
+--- execution. Contains only functions, required by ldump itself -- if serialization is overriden,
+--- may need to be updated with environment used there.
+ldump.get_safe_env = function()
+  return {
+    load = load,
+    loadstring = loadstring,
+    debug = {
+      setupvalue = debug.setupvalue,
+      upvaluejoin = debug.upvaluejoin,
+    },
+    setmetatable = setmetatable,
+  }
+end
+
 --- Get the list of warnings from the last ldump call.
 ---
 --- See `ldump.strict_mode`.
@@ -92,8 +109,20 @@ ldump_mt.__call = function(self, x)
     error(result, 2)
   end
 
-  return ("local cache = {}\nlocal ldump = require(\"%s\")\nreturn %s")
-    :format(self.require_path, result)
+  local base_code = [[
+local cache = {}
+local ldump
+if require then
+  ldump = require("%s")
+else
+  ldump = {
+    ignore_upvalue_size = function() end
+  }
+end
+return %s
+  ]]
+
+  return base_code:format(self.require_path, result)
 end
 
 allowed_big_upvalues = {}
