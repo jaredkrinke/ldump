@@ -2,7 +2,13 @@ local ldump = require("init")
 _G.unpack = table.unpack
 
 if os.getenv("LDUMP_TEST_SAFETY") then
-  local old_load = load
+  local old_load
+  if loadstring and type(jit) ~= "table" then
+    old_load = loadstring
+  else
+    old_load = load
+  end
+
   _G.load = function(x)
     return old_load(x, nil, nil, ldump.get_safe_env())
   end
