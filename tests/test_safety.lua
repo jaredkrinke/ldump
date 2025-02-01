@@ -1,24 +1,24 @@
 local ldump = require("init")
 
-it("Attempt at isolation of `load`", function()
-  local to_serialize = function()
+it("On-load safety", function()
+  local malicious_data = string.dump(function()
     print(123)
-  end
+  end)
 
-  local safe_env = ldump.get_safe_env()
-  local serialized = ldump(to_serialize)
+  local ok, res = pcall(assert(load(malicious_data, nil, nil, ldump.get_safe_env())))
+  print(res)
+  assert.is_false(ok)
+end)
 
-  local deserialized
-  if _VERSION == "Lua 5.1" then
-    local f = function()
-      deserialized = loadstring(serialized)()
+it("Data safety", function()
+  local malicious_data = ldump(setmetatable({}, {
+    __index = function()
+      print(123)
     end
-    setfenv(f, safe_env)
-    f()
-  else
-    deserialized = load(serialized, nil, nil, safe_env)()
-  end
+  }))
 
-  local ok = pcall(deserialized)
+  local deserialized = load(malicious_data, nil, nil, ldump.get_safe_env())()
+  local ok, res = pcall(function() return deserialized.innocent_looking_field end)
+  print(res)
   assert.is_false(ok)
 end)
