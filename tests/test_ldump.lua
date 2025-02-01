@@ -1,6 +1,12 @@
 local ldump = require("init")
--- ldump.require_path = "ldump"
 _G.unpack = table.unpack
+
+if os.getenv("LDUMP_TEST_SAFETY") then
+  local old_load = load
+  _G.load = function(x)
+    return old_load(x, nil, nil, ldump.get_safe_env())
+  end
+end
 
 --- Serialize and deserialize
 local pass = function(value)

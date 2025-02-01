@@ -3,6 +3,15 @@
 
 _G.unpack = unpack or table.unpack
 
+if os.getenv("LDUMP_TEST_SAFETY") then
+  local old_load = load
+  local env = require("init").get_safe_env()
+  env.coroutine = coroutine
+  _G.load = function(x)
+    return old_load(x, nil, nil, env)
+  end
+end
+
 describe("README.md", function()
   it("Basic use case", function()
     local ldump = require("init")

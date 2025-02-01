@@ -48,7 +48,6 @@ ldump.serializer = setmetatable({
 --- itself -- if serialization is overriden, may need to be updated with environment used there.
 ldump.get_safe_env = function()
   return {
-    require = require,
     load = load,
     loadstring = loadstring,
     debug = {
@@ -110,8 +109,20 @@ ldump_mt.__call = function(self, x)
     error(result, 2)
   end
 
-  return ("local cache = {}\nlocal ldump = require(\"%s\")\nreturn %s")
-    :format(self.require_path, result)
+  local base_code = [[
+local cache = {}
+local ldump
+if require then
+  ldump = require("%s")
+else
+  ldump = {
+    ignore_upvalue_size = function() end
+  }
+end
+return %s
+  ]]
+
+  return base_code:format(self.require_path, result)
 end
 
 allowed_big_upvalues = {}
