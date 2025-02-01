@@ -94,7 +94,11 @@ See as a test at [/tests/test_use_case.lua:23](/tests/test_use_case.lua#L23)
 
 Copy the [raw contents of init.lua from the latest release](https://raw.githubusercontent.com/girvel/ldump/refs/tags/v1.2.0/init.lua) into your `lib/ldump.lua` or `git clone -b v1.2.0 https://github.com/girvel/ldump` inside the `lib/` — you still would be able to do `require("ldump")`.
 
+---
+
 ## Credits
 
 - [paulstelian97](https://www.reddit.com/user/paulstelian97/) for providing a joined upvalue test case
 - [lambda_abstraction](https://www.reddit.com/user/lambda_abstraction/) for suggesting a way to join upvalues
+- [jhatemyjob](https://news.ycombinator.com/user?id=jhatemyjob) for special characters test case
+- [lifthrasiir](https://news.ycombinator.com/user?id=lifthrasiir) for pointing out safety issues
