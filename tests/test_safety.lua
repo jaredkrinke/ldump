@@ -22,7 +22,7 @@ it("Data safety", function()
 
   local ok
   if type(jit) == "table" then
-    ok = pcall(function() return rawget(deserialized, "innocent_looking_field") end)
+    ok = rawget(deserialized, "innocent_looking_field")
   else
     ok = pcall(function() return deserialized.innocent_looking_field end)
   end
