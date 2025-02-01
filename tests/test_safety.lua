@@ -1,4 +1,4 @@
-if _VERSION == "Lua 5.1" then return end  -- Lua 5.1 and LuaJIT are not safe
+if _VERSION == "Lua 5.1" and type(jit) ~= "table" then return end  -- Lua 5.1 is not safe
 
 local ldump = require("init")
 
@@ -20,6 +20,12 @@ it("Data safety", function()
 
   local deserialized = load(malicious_data, nil, nil, ldump.get_safe_env())()
 
-  local ok = pcall(function() return deserialized.innocent_looking_field end)
+  local ok
+  if type(jit) == "table" then
+    ok = pcall(function() return rawget(deserialized, "innocent_looking_field") end)
+  else
+    ok = pcall(function() return deserialized.innocent_looking_field end)
+  end
+
   assert.is_false(ok)
 end)
