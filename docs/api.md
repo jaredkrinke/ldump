@@ -83,7 +83,7 @@ ldump.get_safe_env() -> table
 
 Get environment for safe `load`ing.
 
-Intended to be passed as `env` argument (or used in setfenv in Lua 5.1) when `load`ing untrusted data to prevent malicious code execution. Contains only functions, required by ldump itself -- if serialization is overriden, may need to be updated with environment used there.
+Intended to be passed as `env` argument when `load`ing untrusted data to prevent malicious code execution. Contains only functions, required by ldump itself -- if serialization is overriden, may need to be updated with environment used there.
 
 ## `ldump.get_warnings`
 
