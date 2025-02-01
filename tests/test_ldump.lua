@@ -38,6 +38,7 @@ describe("Serializing primitives:", function()
 
   it("string", function()
     persists("abc\n")
+    persists("\a\b\f\n\r\t\v\\\"\'")
   end)
 
   it("function", function()
