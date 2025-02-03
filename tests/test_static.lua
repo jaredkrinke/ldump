@@ -1,8 +1,10 @@
 local ldump = require("init")
+local utils = require("tests.utils")
 
-local pass = function(value)
-  return load(ldump(value))()
-end
+_G.unpack = table.unpack
+_G.load = utils.load
+local pass = utils.pass
+
 
 describe("ldump.deterministic_require", function()
   it("usage", function()
