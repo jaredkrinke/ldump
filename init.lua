@@ -252,28 +252,52 @@ local primitives = {
 
 local package_cache = {}
 
+local REFERENCE_TYPES = {
+  table = true,
+  ["function"] = true,
+  userdata = true,
+  thread = true,
+}
+
 handle_primitive = function(x, cache, upvalue_id_cache)
+  local xtype = type(x)
+  if REFERENCE_TYPES[xtype] then
+    local cache_i = cache[x]
+    if cache_i then
+      return ("cache[%s]"):format(cache_i)
+    end
+  end
+
   do  -- handle custom serialization
     local deserializer, source = ldump.serializer(x)
 
     if deserializer then
       local deserializer_type = type(deserializer)
 
+      if deserializer_type ~= "string" and deserializer_type ~= "function" then
+        error(("%s returned type %s for .%s; it should return string or function")
+          :format(source or "ldump.serializer", deserializer_type, table.concat(stack, ".")), 0)
+      end
+
+      local expression
       if deserializer_type == "string" then
-        return deserializer
-      end
-
-      if deserializer_type == "function" then
+        expression = deserializer
+      else
         allowed_big_upvalues[deserializer] = true
-        return ("%s()"):format(handle_primitive(deserializer, cache, upvalue_id_cache))
+        expression = ("%s()"):format(handle_primitive(deserializer, cache, upvalue_id_cache))
       end
 
-      error(("%s returned type %s for .%s; it should return string or function")
-        :format(source or "ldump.serializer", deserializer_type, table.concat(stack, ".")), 0)
+      cache.size = cache.size + 1
+      cache[x] = cache.size
+
+      return to_expression(([[
+        local _ = %s
+        cache[%s] = _
+        return _
+      ]]):format(expression, cache.size))
     end
   end
 
-  local xtype = type(x)
   if not primitives[xtype] then
     local message = (
       "ldump does not support serializing type %q of .%s; use `__serialize` metamethod or " ..
@@ -286,13 +310,6 @@ handle_primitive = function(x, cache, upvalue_id_cache)
 
     table.insert(warnings, message)
     return "nil"
-  end
-
-  if xtype == "table" or xtype == "function" then
-    local cache_i = cache[x]
-    if cache_i then
-      return ("cache[%s]"):format(cache_i)
-    end
   end
 
   if ldump.deterministic_require then
