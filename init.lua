@@ -1,4 +1,4 @@
-local warnings, allowed_big_upvalues, stack, handle_primitive
+local warnings, allowed_big_upvalues, stack, handle_primitive, cache_packages
 
 -- API --
 
@@ -80,6 +80,9 @@ end
 --- @type boolean
 ldump.strict_mode = true
 
+--- @type boolean
+ldump.deterministic_require = false
+
 --- `require`-style path to the ldump module, used in deserialization.
 ---
 --- Inferred from requiring the ldump itself, can be changed.
@@ -103,6 +106,9 @@ ldump_mt.__call = function(self, x)
 
   stack = {}
   warnings = {}
+  if ldump.deterministic_require then
+    cache_packages()
+  end
   local ok, result = pcall(handle_primitive, x, {size = 0}, {})
 
   if not ok then
@@ -192,7 +198,7 @@ local build_function = function(x, cache, upvalue_id_cache)
     if
       k == "_ENV"
       and _ENV ~= nil  -- in versions without _ENV, upvalue _ENV is always just a normal upvalue
-      and v._G == _G  -- for some reason, may be that v ~= _ENV, but v._G == _ENV
+      and v._G == _G  -- for some reason, it may be that v ~= _ENV, but v._G == _ENV
     then
       upvalue = "_ENV"
     else
@@ -244,6 +250,8 @@ local primitives = {
   end,
 }
 
+local package_cache = {}
+
 handle_primitive = function(x, cache, upvalue_id_cache)
   do  -- handle custom serialization
     local deserializer, source = ldump.serializer(x)
@@ -287,7 +295,20 @@ handle_primitive = function(x, cache, upvalue_id_cache)
     end
   end
 
+  if ldump.deterministic_require then
+    local path = package_cache[x]
+    if path then
+      return ("require(%q)"):format(path)
+    end
+  end
+
   return primitives[xtype](x, cache, upvalue_id_cache)
+end
+
+cache_packages = function()
+  for k, v in pairs(package.loaded) do
+    package_cache[v] = k
+  end
 end
 
 
