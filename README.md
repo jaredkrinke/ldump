@@ -1,6 +1,6 @@
 [API](/docs/api.md) | [Overloading serialization](/docs/overloading.md) | [Safety](/docs/safety.md) | [Development](/docs/development.md)
 
-# ldump — serializer for any lua type
+# ldump — serialization library for any lua type
 
 `ldump` is a flexible serializer, able to serialize any data, starting with circular references, tables as keys, functions with upvalues, metatables and ending with coroutines, threads and userdata (by defining how they should be serialized). It outputs valid Lua code that recreates the original object, doing the deserialization through `load(data)()`. It aims for functionality and flexibility instead of speed and size, allowing full serialization of complex data, such as video game saves. The output is large, but can be drastically reduced with modern compression algorithms.
 
