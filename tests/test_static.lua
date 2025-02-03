@@ -2,7 +2,6 @@ local ldump = require("init")
 local utils = require("tests.utils")
 
 _G.unpack = table.unpack
-_G.load = utils.load
 local pass = utils.pass
 
 

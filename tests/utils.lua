@@ -11,8 +11,11 @@ if os.getenv("LDUMP_TEST_SAFETY") then
     old_load = load
   end
 
+  local env = ldump.get_safe_env()
+  env.coroutine = coroutine
+
   utils.load = function(x)
-    return old_load(x, nil, nil, ldump.get_safe_env())
+    return old_load(x, nil, nil, env)
   end
 else
   utils.load = load
