@@ -176,10 +176,17 @@ local build_function = function(x, cache, upvalue_id_cache)
   local ok, res = pcall(string.dump, x)
 
   if not ok then
-    error((
-      "Function .%s is not `string.dump`-compatible; if it uses coroutines, use " ..
-      "`ldump.serializer.handlers`"
-    ):format(table.concat(stack, ".")), 0)
+    local message = (
+      "Function .%s is not `string.dump`-compatible; it likely uses coroutines; to serialize " ..
+      "it properly, use `ldump.serializer.handlers`"
+    ):format(table.concat(stack, "."))
+
+    if ldump.strict_mode then
+      error(message, 0)
+    else
+      table.insert(warnings, message)
+      return "nil"
+    end
   end
 
   result[1] = "local _ = " .. ([[load(%q)]]):format(res)

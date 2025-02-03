@@ -242,6 +242,22 @@ describe("Error handling:", function()
       ldump.strict_mode = true
     end)
   end)
+
+  describe("coroutine.wrap function", function()
+    local f = coroutine.wrap(function() end)
+
+    it("causes an error in strict mode", function()
+      local ok = pcall(ldump --[[@as function]], f)
+      assert.is_false(ok)
+    end)
+
+    it("writes a warning in non-strict mode", function()
+      ldump.strict_mode = false
+      ldump(f)
+      assert.are_equal(1, #ldump.get_warnings())
+      ldump.strict_mode = true
+    end)
+  end)
 end)
 
 describe("Corner cases:", function()
