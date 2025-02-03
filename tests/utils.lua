@@ -19,6 +19,9 @@ else
 end
 
 --- Serialize and deserialize
+--- @generic T
+--- @param value T
+--- @return T
 utils.pass = function(value)
   return load(ldump(value))()
 end

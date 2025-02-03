@@ -1,6 +1,5 @@
 local ldump = require("init")
-local pass
-_G.unpack, _G.load, pass = require("tests.prefix")
+local utils = require("tests.utils")
 
 _G.unpack = table.unpack or unpack
 _G.load = utils.load
@@ -183,8 +182,16 @@ describe("Overriding serialization:", function()
     ldump.serializer = old_serializer
   end)
 
-  -- it("Caching with custom serializer", function()
-  -- end)
+  it("Caching with custom serializer", function()
+    local f = coroutine.wrap(function() end)
+    local to_serialize = {a = f, b = f}
+    ldump.serializer.handlers[f] = function() return {} end
+
+    local copy = pass(to_serialize)
+    assert.are_equal(copy.a, copy.b)
+
+    ldump.serializer.handlers[f] = nil
+  end)
 end)
 
 describe("Error handling:", function()
@@ -215,7 +222,7 @@ describe("Error handling:", function()
       return 42
     end})
 
-    local ok, result = pcall(ldump --[[ @as function ]], t)
+    local ok, result = pcall(ldump --[[@as function]], t)
 
     assert.is_false(ok)
   end)
@@ -224,7 +231,7 @@ describe("Error handling:", function()
     local c = coroutine.create(function() end)
 
     it("causes an error in strict mode", function()
-      local success = pcall(ldump --[[ @as function ]], c)
+      local success = pcall(ldump --[[@as function]], c)
       assert.is_false(success)
     end)
 
