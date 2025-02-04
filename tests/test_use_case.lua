@@ -1,12 +1,9 @@
 -- NOTICE all tests in this file are represented in the corresponding files, and should be updated
 --   there each time they are updated here
 
-local ldump = require("init")
 local utils = require("tests.utils")
-
 _G.unpack = table.unpack or unpack
 _G.load = utils.load
-local pass = utils.pass
 
 
 describe("README.md", function()
