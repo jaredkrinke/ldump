@@ -6,7 +6,7 @@
 ldump(value: any) -> string
 ```
 
-Serialize given value to a string, that can be deserialized via `load`
+Serialize the given value to a string, that can be deserialized via `load`
 
 ### Example
 
@@ -73,7 +73,7 @@ ldump.serializer.handlers: table<any, string | fun(): any>
 
 Custom serialization functions for the exact objects. 
 
-Key is the value that can be serialized, value is a deserializer in form of a string with a valid lua expression or a function. Takes priority over `__serialize`.
+Key is the value that can be serialized, value is a deserializer in the form of a string with a valid lua expression or a function. Takes priority over `__serialize`.
 
 ## `ldump.get_safe_env`
 
@@ -81,9 +81,9 @@ Key is the value that can be serialized, value is a deserializer in form of a st
 ldump.get_safe_env() -> table
 ```
 
-Get environment for safe `load`ing.
+Get the environment for safe `load`ing.
 
-Intended to be passed as `env` argument when `load`ing untrusted data to prevent malicious code execution. Contains only functions, required by ldump itself -- if serialization is overriden, may need to be updated with environment used there.
+Intended to be passed as `env` argument when `load`ing untrusted data to prevent malicious code execution. Contains only functions, required by ldump itself -- if serialization is overridden, may need to be updated with the environment used there.
 
 ## `ldump.get_warnings`
 
@@ -103,7 +103,7 @@ ldump.ignore_upvalue_size<T: function>(f: T) -> T
 
 Mark function, causing dump to stop producing upvalue size warnings.
 
-Upvalues can cause large modules to be serialized implicitly. Warnings allow to track that. Returns the same function.
+Upvalues can cause large modules to be serialized implicitly. Warnings allow tracking that. Returns the same function.
 
 ## `ldump.strict_mode`
 

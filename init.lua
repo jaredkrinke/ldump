@@ -5,7 +5,7 @@ local warnings, allowed_big_upvalues, stack, handle_primitive, cache_packages
 local ldump_mt = {}
 
 --- Serialization library, can be called directly.
---- Serialize given value to a string, that can be deserialized via `load`.
+--- Serialize the given value to a string, that can be deserialized via `load`.
 --- @overload fun(value: any): string
 local ldump = setmetatable({}, ldump_mt)
 
@@ -22,7 +22,7 @@ local ldump = setmetatable({}, ldump_mt)
 ldump.serializer = setmetatable({
   --- Custom serialization functions for the exact objects. 
   ---
-  --- Key is the value that can be serialized, value is a deserializer in form of a string with a
+  --- Key is the value that can be serialized, value is a deserializer in the form of a string with a
   --- valid lua expression or a function. Takes priority over `__serialize`.
   --- @type table<any, deserializer>
   handlers = {},
@@ -41,11 +41,11 @@ ldump.serializer = setmetatable({
   end,
 })
 
---- Get environment for safe `load`ing.
+--- Get the environment for safe `load`ing.
 ---
 --- Intended to be passed as `env` argument when `load`ing untrusted data to prevent malicious code
---- execution. Contains only functions, required by ldump itself -- if serialization is overriden,
---- may need to be updated with environment used there.
+--- execution. Contains only functions, required by ldump itself -- if serialization is overridden,
+--- may need to be updated with the environment used there.
 ldump.get_safe_env = function()
   return {
     load = load,
@@ -66,7 +66,7 @@ ldump.get_warnings = function() return {unpack(warnings)} end
 
 --- Mark function, causing dump to stop producing upvalue size warnings.
 ---
---- Upvalues can cause large modules to be serialized implicitly. Warnings allow to track that.
+--- Upvalues can cause large modules to be serialized implicitly. Warnings allow tracking that.
 --- @generic T: function
 --- @param f T
 --- @return T # returns the same function

@@ -41,7 +41,7 @@ describe("README.md", function()
     local upvalue = 42
     game_state.get_answer = function() return upvalue end
 
-    -- fundamentally non-serializable types if overriden
+    -- fundamentally non-serializable types if overridden
     local create_coroutine = function()
       return coroutine.wrap(function()
         coroutine.yield(1337)
