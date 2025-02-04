@@ -80,8 +80,13 @@ end
 --- @type boolean
 ldump.strict_mode = true
 
+--- If true (false by default), `ldump` will serialize modules through `require`.
+---
+--- Allows to avoid serializing the modules, captured as upvalues in functions. Works only on the
+--- modules themselves, not on the values within. Is overall safe, as Lua itself caches modules the
+--- same way.
 --- @type boolean
-ldump.deterministic_require = false
+ldump.preserve_modules = false
 
 --- `require`-style path to the ldump module, used in deserialization.
 ---
@@ -106,7 +111,7 @@ ldump_mt.__call = function(self, x)
 
   stack = {}
   warnings = {}
-  if ldump.deterministic_require then
+  if ldump.preserve_modules then
     cache_packages()
   end
   local ok, result = pcall(handle_primitive, x, {size = 0}, {})
@@ -319,7 +324,7 @@ handle_primitive = function(x, cache, upvalue_id_cache)
     return "nil"
   end
 
-  if ldump.deterministic_require then
+  if ldump.preserve_modules then
     local path = package_cache[x]
     if path then
       return ("require(%q)"):format(path)

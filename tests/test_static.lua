@@ -5,14 +5,14 @@ _G.unpack = table.unpack
 local pass = utils.pass
 
 
-describe("ldump.deterministic_require", function()
+describe("ldump.preserve_modules", function()
   it("usage", function()
-    ldump.deterministic_require = true
+    ldump.preserve_modules = true
     local deterministic = require("tests.resources.deterministic")
     local f = function() return deterministic.some_value end
     local f_copy = pass(f)
     assert.are_equal(f(), f_copy())
-    ldump.deterministic_require = false
+    ldump.preserve_modules = false
   end)
 
   it("not usage", function()
@@ -23,11 +23,11 @@ describe("ldump.deterministic_require", function()
   end)
 
   it("not in upvalue", function()
-    ldump.deterministic_require = true
+    ldump.preserve_modules = true
     local deterministic = require("tests.resources.deterministic")
     local t = {value = deterministic}
     local t_copy = pass(t)
     assert.are_equal(t.value, t_copy.value)
-    ldump.deterministic_require = false
+    ldump.preserve_modules = false
   end)
 end)

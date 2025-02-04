@@ -113,6 +113,16 @@ ldump.strict_mode: boolean = true
 
 If true (by default), `ldump` treats unserializable data as an error, if false produces a warning and replaces data with nil.
 
+## `ldump.preserve_modules`
+
+```lua
+ldump.preserve_modules: boolean = false
+```
+
+If true (false by default), `ldump` will serialize modules through `require`.
+
+Allows to avoid serializing the modules, captured as upvalues in functions. Works only on the modules themselves, not on the values within. Is overall safe, as Lua itself caches modules the same way.
+
 ## `ldump.require_path`
 
 ```lua
