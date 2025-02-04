@@ -1,4 +1,4 @@
-[API](/docs/api.md) | [Overloading serialization](/docs/overloading.md) | [Safety](/docs/safety.md) | [Development](/docs/development.md)
+[API](/docs/api.md) | [Overloading serialization](/docs/overloading.md) | [Serializing modules](/docs/serializing_modules.md) | [Safety](/docs/safety.md) | [Development](/docs/development.md)
 
 # ldump — serialization library for any lua type
 
@@ -59,7 +59,7 @@ game_state.deleted_entities = {
 local upvalue = 42
 game_state.get_answer = function() return upvalue end
 
--- fundamentally non-serializable types if overriden
+-- fundamentally non-serializable types if overridden
 local create_coroutine = function()
   return coroutine.wrap(function()
     coroutine.yield(1337)
@@ -101,5 +101,5 @@ See as a test at [/tests/test_use_case.lua:23](/tests/test_use_case.lua#L23)
 
 - [paulstelian97](https://www.reddit.com/user/paulstelian97/) for providing a joined upvalue test case
 - [lambda_abstraction](https://www.reddit.com/user/lambda_abstraction/) for suggesting a way to join upvalues
-- [jhatemyjob](https://news.ycombinator.com/user?id=jhatemyjob) for special characters test case
+- [jhatemyjob](https://news.ycombinator.com/user?id=jhatemyjob) for the special characters test case
 - [lifthrasiir](https://news.ycombinator.com/user?id=lifthrasiir) for pointing out safety issues

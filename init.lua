@@ -1,11 +1,11 @@
-local warnings, allowed_big_upvalues, stack, handle_primitive
+local warnings, allowed_big_upvalues, stack, handle_primitive, cache_packages
 
 -- API --
 
 local ldump_mt = {}
 
 --- Serialization library, can be called directly.
---- Serialize given value to a string, that can be deserialized via `load`.
+--- Serialize the given value to a string, that can be deserialized via `load`.
 --- @overload fun(value: any): string
 local ldump = setmetatable({}, ldump_mt)
 
@@ -22,7 +22,7 @@ local ldump = setmetatable({}, ldump_mt)
 ldump.serializer = setmetatable({
   --- Custom serialization functions for the exact objects. 
   ---
-  --- Key is the value that can be serialized, value is a deserializer in form of a string with a
+  --- Key is the value that can be serialized, value is a deserializer in the form of a string with a
   --- valid lua expression or a function. Takes priority over `__serialize`.
   --- @type table<any, deserializer>
   handlers = {},
@@ -41,11 +41,11 @@ ldump.serializer = setmetatable({
   end,
 })
 
---- Get environment for safe `load`ing.
+--- Get the environment for safe `load`ing.
 ---
 --- Intended to be passed as `env` argument when `load`ing untrusted data to prevent malicious code
---- execution. Contains only functions, required by ldump itself -- if serialization is overriden,
---- may need to be updated with environment used there.
+--- execution. Contains only functions, required by ldump itself -- if serialization is overridden,
+--- may need to be updated with the environment used there.
 ldump.get_safe_env = function()
   return {
     load = load,
@@ -66,7 +66,7 @@ ldump.get_warnings = function() return {unpack(warnings)} end
 
 --- Mark function, causing dump to stop producing upvalue size warnings.
 ---
---- Upvalues can cause large modules to be serialized implicitly. Warnings allow to track that.
+--- Upvalues can cause large modules to be serialized implicitly. Warnings allow tracking that.
 --- @generic T: function
 --- @param f T
 --- @return T # returns the same function
@@ -79,6 +79,14 @@ end
 --- warning and replaces data with nil.
 --- @type boolean
 ldump.strict_mode = true
+
+--- If true (false by default), `ldump` will serialize modules through `require`.
+---
+--- Allows to avoid serializing the modules, captured as upvalues in functions. Works only on the
+--- modules themselves, not on the values within. Is overall safe, as Lua itself caches modules the
+--- same way.
+--- @type boolean
+ldump.preserve_modules = false
 
 --- `require`-style path to the ldump module, used in deserialization.
 ---
@@ -103,6 +111,9 @@ ldump_mt.__call = function(self, x)
 
   stack = {}
   warnings = {}
+  if ldump.preserve_modules then
+    cache_packages()
+  end
   local ok, result = pcall(handle_primitive, x, {size = 0}, {})
 
   if not ok then
@@ -170,10 +181,17 @@ local build_function = function(x, cache, upvalue_id_cache)
   local ok, res = pcall(string.dump, x)
 
   if not ok then
-    error((
-      "Function .%s is not `string.dump`-compatible; if it uses coroutines, use " ..
-      "`ldump.serializer.handlers`"
-    ):format(table.concat(stack, ".")), 0)
+    local message = (
+      "Function .%s is not `string.dump`-compatible; it likely uses coroutines; to serialize " ..
+      "it properly, use `ldump.serializer.handlers`"
+    ):format(table.concat(stack, "."))
+
+    if ldump.strict_mode then
+      error(message, 0)
+    else
+      table.insert(warnings, message)
+      return "nil"
+    end
   end
 
   result[1] = "local _ = " .. ([[load(%q)]]):format(res)
@@ -192,7 +210,7 @@ local build_function = function(x, cache, upvalue_id_cache)
     if
       k == "_ENV"
       and _ENV ~= nil  -- in versions without _ENV, upvalue _ENV is always just a normal upvalue
-      and v._G == _G  -- for some reason, may be that v ~= _ENV, but v._G == _ENV
+      and v._G == _G  -- for some reason, it may be that v ~= _ENV, but v._G == _ENV
     then
       upvalue = "_ENV"
     else
@@ -244,28 +262,54 @@ local primitives = {
   end,
 }
 
+local package_cache = {}
+
+local REFERENCE_TYPES = {
+  table = true,
+  ["function"] = true,
+  userdata = true,
+  thread = true,
+}
+
 handle_primitive = function(x, cache, upvalue_id_cache)
+  local xtype = type(x)
+  if REFERENCE_TYPES[xtype] then
+    local cache_i = cache[x]
+    if cache_i then
+      return ("cache[%s]"):format(cache_i)
+    end
+  end
+
   do  -- handle custom serialization
     local deserializer, source = ldump.serializer(x)
 
     if deserializer then
       local deserializer_type = type(deserializer)
 
+      if deserializer_type ~= "string" and deserializer_type ~= "function" then
+        error(("%s returned type %s for .%s; it should return string or function")
+          :format(source or "ldump.serializer", deserializer_type, table.concat(stack, ".")), 0)
+      end
+
+      local expression
       if deserializer_type == "string" then
-        return deserializer
-      end
-
-      if deserializer_type == "function" then
+        expression = deserializer
+      else
         allowed_big_upvalues[deserializer] = true
-        return ("%s()"):format(handle_primitive(deserializer, cache, upvalue_id_cache))
+        expression = ("%s()"):format(handle_primitive(deserializer, cache, upvalue_id_cache))
       end
 
-      error(("%s returned type %s for .%s; it should return string or function")
-        :format(source or "ldump.serializer", deserializer_type, table.concat(stack, ".")), 0)
+      cache.size = cache.size + 1
+      cache[x] = cache.size
+
+      return to_expression(([[
+        local _ = %s
+        cache[%s] = _
+        return _
+      ]]):format(expression, cache.size))
     end
   end
 
-  local xtype = type(x)
   if not primitives[xtype] then
     local message = (
       "ldump does not support serializing type %q of .%s; use `__serialize` metamethod or " ..
@@ -280,14 +324,20 @@ handle_primitive = function(x, cache, upvalue_id_cache)
     return "nil"
   end
 
-  if xtype == "table" or xtype == "function" then
-    local cache_i = cache[x]
-    if cache_i then
-      return ("cache[%s]"):format(cache_i)
+  if ldump.preserve_modules then
+    local path = package_cache[x]
+    if path then
+      return ("require(%q)"):format(path)
     end
   end
 
   return primitives[xtype](x, cache, upvalue_id_cache)
+end
+
+cache_packages = function()
+  for k, v in pairs(package.loaded) do
+    package_cache[v] = k
+  end
 end
 
 

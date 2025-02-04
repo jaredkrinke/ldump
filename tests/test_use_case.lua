@@ -1,23 +1,10 @@
 -- NOTICE all tests in this file are represented in the corresponding files, and should be updated
 --   there each time they are updated here
 
-_G.unpack = unpack or table.unpack
+local utils = require("tests.utils")
+_G.unpack = table.unpack or unpack
+_G.load = utils.load
 
-if os.getenv("LDUMP_TEST_SAFETY") then
-  local old_load
-  if loadstring and type(jit) ~= "table" then
-    old_load = loadstring
-  else
-    old_load = load
-  end
-
-  local env = require("init").get_safe_env()
-  env.coroutine = coroutine
-
-  _G.load = function(x)
-    return old_load(x, nil, nil, env)
-  end
-end
 
 describe("README.md", function()
   it("Basic use case", function()
@@ -54,7 +41,7 @@ describe("README.md", function()
     local upvalue = 42
     game_state.get_answer = function() return upvalue end
 
-    -- fundamentally non-serializable types if overriden
+    -- fundamentally non-serializable types if overridden
     local create_coroutine = function()
       return coroutine.wrap(function()
         coroutine.yield(1337)
