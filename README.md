@@ -103,3 +103,4 @@ See as a test at [/tests/test_use_case.lua:23](/tests/test_use_case.lua#L23)
 - [lambda_abstraction](https://www.reddit.com/user/lambda_abstraction/) for suggesting a way to join upvalues
 - [jhatemyjob](https://news.ycombinator.com/user?id=jhatemyjob) for the special characters test case
 - [lifthrasiir](https://news.ycombinator.com/user?id=lifthrasiir) for pointing out safety issues
+- [radioflash](https://github.com/radioflash) for suggesting a simpler module serialization logic and suggestions for publicity
