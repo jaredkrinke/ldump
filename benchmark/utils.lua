@@ -15,7 +15,7 @@ utils.render_table = function(headers, columns)
   result = result .. "\n| "
 
   for i, size in ipairs(column_sizes) do
-    result = result .. string.rep("-", column_sizes[i]) .. " | "
+    result = result .. string.rep("-", size) .. " | "
   end
 
   result = result .. "\n| "

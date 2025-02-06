@@ -1,5 +1,7 @@
 package.path = package.path .. ";./benchmark/_deps/?.lua"
 local ldump = require("init")
+local binser = require("binser")
+local bitser = require("bitser")
 local inspect = require("inspect")
 local utils = require("benchmark.utils")
 math.randomseed(os.time())
@@ -20,11 +22,6 @@ math.randomseed(os.time())
 
   maybe binser/bitser should be attempted with compression too
 ]]
-
-
--- inputs --
-
-local ITERATIONS_N = 10
 
 
 -- data --
@@ -91,6 +88,16 @@ local serializers = {
     deserialize = function(data)
       return load(data)()
     end,
+  },
+  {
+    name = "binser",
+    serialize = binser.serialize,
+    deserialize = binser.deserialize,
+  },
+  {
+    name = "bitser",
+    serialize = bitser.dumps,
+    deserialize = bitser.loads,
   }
 }
 
