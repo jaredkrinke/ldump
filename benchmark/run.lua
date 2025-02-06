@@ -1,6 +1,7 @@
 package.path = package.path .. ";./benchmark/_deps/?.lua"
 local ldump = require("init")
 local inspect = require("inspect")
+local utils = require("benchmark.utils")
 math.randomseed(os.time())
 
 
@@ -83,18 +84,35 @@ end
 
 -- logic --
 
-local serialize_t = os.clock()
+local serializers = {
+  {
+    name = "ldump",
+    serialize = ldump,
+    deserialize = function(data)
+      return load(data)()
+    end,
+  }
+}
 
-local serialized = ldump(data)
+local names = {}
+local serialize_ts = {}
+local deserialize_ts = {}
+local memory_usages = {}
 
-serialize_t = os.clock() - serialize_t
+for i, serializer in ipairs(serializers) do
+  names[i] = serializer.name
 
-local deserialize_t = os.clock()
+  local serialize_t = os.clock()
+  local serialized = serializer.serialize(data)
+  serialize_ts[i] = ("%.3f s"):format(os.clock() - serialize_t)
 
-_ = load(serialized)()
+  local deserialize_t = os.clock()
+  _ = serializer.deserialize(serialized)
+  deserialize_ts[i] = ("%.3f s"):format(os.clock() - deserialize_t)
 
-deserialize_t = os.clock() - deserialize_t
+  memory_usages[i] = ("%.3f KB"):format(#serialized / 1024)
+end
 
-print(("serialize time: %.3f s\ndeserialize time: %.3f s\nmemory: %.3f KB"):format(
-  serialize_t, deserialize_t, #serialized / 1024
-))
+local headers = {"serializer", "serialize time", "deserialize time", "memory"}
+
+print(utils.render_table(headers, {names, serialize_ts, deserialize_ts, memory_usages}))
