@@ -88,13 +88,6 @@ ldump.strict_mode = true
 --- @type boolean
 ldump.preserve_modules = false
 
---- `require`-style path to the ldump module, used in deserialization.
----
---- Inferred from requiring the ldump itself, can be changed.
---- @type string
-ldump.require_path = select(1, ...)
-
-
 -- internal implementation --
 
 -- NOTICE: lua5.1-compatible; does not support goto
@@ -104,11 +97,6 @@ if _VERSION == "Lua 5.1" then
 end
 
 ldump_mt.__call = function(self, x)
-  assert(
-    self.require_path,
-    "Put the lua path to ldump libary into ldump.require_path before calling ldump itself"
-  )
-
   stack = {}
   warnings = {}
   if ldump.preserve_modules then
@@ -123,17 +111,10 @@ ldump_mt.__call = function(self, x)
   local base_code = [[
 local cache = {}
 local ldump
-if require then
-  ldump = require("%s")
-else
-  ldump = {
-    ignore_upvalue_size = function() end
-  }
-end
 return %s
   ]]
 
-  return base_code:format(self.require_path, result)
+  return base_code:format(result)
 end
 
 allowed_big_upvalues = {}
